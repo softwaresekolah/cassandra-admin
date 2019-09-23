@@ -60,6 +60,7 @@ const FormKeyspaceModal = ({ handleInput, keyspace }) => (
     </div>
   </div>
 );
+
 class DashboardPage extends Component {
   state = {
     new_keyspace: {
@@ -114,9 +115,31 @@ class DashboardPage extends Component {
     }
   };
 
-  render() {
-    const { allKeyspaces } = this.props;
+  handleSelectKeyspace = selectedKeyspace => e => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    console.log("handleSelectKeyspace", { selectedKeyspace });
+  };
 
+  handleAlterKeyspace = selectedKeyspace => e => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    console.log("handleAlterKeyspace", { selectedKeyspace });
+  };
+
+  handleDropKeyspace = selectedKeyspace => e => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    console.log("handleDropKeyspace", { selectedKeyspace });
+  };
+
+  render() {
     return (
       <AdminArea withoutFooter>
         <Head>
@@ -129,7 +152,6 @@ class DashboardPage extends Component {
               <i className="fa fa-plus-circle" /> New Keyspace
             </span>
           }
-          size="lg"
           visible={this.state.addNewKeyspaceVisible}
           onClose={this.closeNewKeyspace}
         >
@@ -141,65 +163,112 @@ class DashboardPage extends Component {
 
         <div className="container-fluid">
           <div className="row">
-            <div className="col-md-3">
-              <div className="card">
-                <div className="card-status bg-primary" />
-                <div className="card-header">
-                  <div className="card-title">
-                    <i className="fa fa-link" /> Link Cepat
-                  </div>
-                </div>
-                <div className="card-body">
-                  <Link href="#">
-                    <a
-                      className="btn btn-success btn-block pt-4"
-                      style={{ fontSize: "120%" }}
-                      onClick={this.openNewKeyspace}
-                    >
-                      <i
-                        className="fa fa-database"
-                        style={{ fontSize: "150%" }}
-                      />
-                      <br />
-                      New Keyspace
-                    </a>
-                  </Link>
-                </div>
+            <div className="col-md-12">
+              <h3 className="fa-pull-left">
+                <i className="fa fa-info-circle" /> All Keyspaces
+              </h3>
+              <div className="fa-pull-right hoverable on-hover-shadow">
+                <button
+                  className="btn btn-success btn-block"
+                  onClick={this.openNewKeyspace}
+                >
+                  <i className="fa fa-plus-circle" /> Add New Keyspace
+                </button>
               </div>
+              <div className="clearfix" />
+              <hr className="mt-2" />
             </div>
-            <div className="col-md-9">
-              <div className="card">
-                <div className="card-status bg-success" />
-                <div className="card-header">
-                  <div className="card-title">
-                    <i className="fa fa-info-circle" /> {appConfig.appName}
-                  </div>
-                </div>
-                <div className="card-body">
+
+            {this.props.allKeyspaces.map(ks => {
+              if (ks.keyspace_name.includes("system")) {
+                return (
                   <div
-                    className="card-body text-center"
-                    style={{ fontSize: "200%" }}
+                    className="col-md-4"
+                    key={ks.keyspace_name}
+                    onClick={this.handleSelectKeyspace(ks)}
                   >
-                    <div className="row">
-                      {allKeyspaces.map(ks => (
-                        <div className="col-md-4">
-                          <center>
-                            <div className="alert alert-info">
-                              {ks.keyspace_name}
-                            </div>
-                          </center>
+                    <div className="card hoverable on-hover-shadow">
+                      <div className="card-status bg-primary" />
+                      <div className="card-body">
+                        <h4>
+                          <i className="fa fa-database" /> {ks.keyspace_name}{" "}
+                          <button className="btn btn-secondary btn-sm on-hover-shown">
+                            <i className="fa fa-mouse-pointer" /> SELECT
+                          </button>
+                        </h4>
+                        <div className="fa-pull-left text-secondary">
+                          <span>
+                            <i className="fa fa-exclamation-circle" /> System
+                            Keyspace
+                          </span>
                         </div>
-                      ))}
+                        <div className="fa-pull-right on-hover-shown">
+                          <button
+                            type="button"
+                            className="btn btn-primary btn-sm"
+                            onClick={this.handleAlterKeyspace(ks)}
+                          >
+                            ALTER
+                          </button>
+                          &nbsp;&nbsp;
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-sm"
+                            disabled
+                          >
+                            DROP
+                          </button>
+                        </div>
+                        <div className="clearfix"></div>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="card-footer">
-                  <div className="text-right">
-                    Versi Aplikasi {appConfig.appVersion}
+                );
+              } else {
+                return (
+                  <div
+                    className="col-md-4"
+                    key={ks.keyspace_name}
+                    onClick={this.handleSelectKeyspace(ks)}
+                  >
+                    <div className="card hoverable on-hover-shadow">
+                      <div className="card-status bg-success" />
+                      <div className="card-body">
+                        <h4>
+                          <i className="fa fa-database" /> {ks.keyspace_name}{" "}
+                          <button className="btn btn-secondary btn-sm on-hover-shown">
+                            <i className="fa fa-mouse-pointer" /> SELECT
+                          </button>
+                        </h4>
+                        <div className="fa-pull-left text-secondary">
+                          <span>
+                            <i className="fa fa-check-circle" /> User Keyspace
+                          </span>
+                        </div>
+                        <div className="fa-pull-right on-hover-shown">
+                          <button
+                            type="button"
+                            className="btn btn-primary btn-sm"
+                            onClick={this.handleAlterKeyspace(ks)}
+                          >
+                            ALTER
+                          </button>
+                          &nbsp;&nbsp;
+                          <button
+                            type="button"
+                            className="btn btn-danger btn-sm"
+                            onClick={this.handleDropKeyspace(ks)}
+                          >
+                            DROP
+                          </button>
+                        </div>
+                        <div className="clearfix"></div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            </div>
+                );
+              }
+            })}
           </div>
         </div>
       </AdminArea>

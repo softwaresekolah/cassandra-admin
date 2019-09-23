@@ -41,7 +41,7 @@ const headerMenu = [
     label: "Dashboard",
     icon: "home",
     isActive: isPathnameAndLinkMatch
-  },
+  }
   // {
   //   label: "Pengaturan",
   //   icon: "cog",
@@ -133,7 +133,7 @@ class Header extends Component {
 
                 {/* <NotificationDropdown /> */}
 
-                <ProfileDropdown
+                {/* <ProfileDropdown
                   name={this.props.currentUser.username}
                   role={
                     this.props.currentUser &&
@@ -149,7 +149,7 @@ class Header extends Component {
                   }
                   // image="/static/faces/female/25.jpg"
                   onLogOut={this.handleLogOut}
-                />
+                /> */}
               </div>
               <a
                 href="#"
@@ -270,22 +270,23 @@ export default withRouter(props => (
     {client => (
       <Mutation mutation={LOGOUT}>
         {logOut => (
-          <Query query={QUERY}>
-            {({ error, loading, data }) => (
-              <Header
-                {...props}
-                client={client}
-                error={error}
-                loading={loading}
-                currentUser={
-                  data && data.currentUser
-                    ? data.currentUser
-                    : { username: "Loading..." }
-                }
-                logOut={logOut}
-              />
-            )}
-          </Query>
+          // <Query query={QUERY}>
+          //   {({ error, loading, data }) => (
+          <Header
+            {...props}
+            client={client}
+            // error={error}
+            // loading={loading}
+            currentUser={
+              // data && data.currentUser
+              //   ? data.currentUser
+              //   :
+              { username: "Loading..." }
+            }
+            logOut={logOut}
+          />
+          //   )}
+          // </Query>
         )}
       </Mutation>
     )}

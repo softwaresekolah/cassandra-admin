@@ -33,12 +33,13 @@ export default class SiteDocument extends Document {
             rel="stylesheet"
           />
           <link href="/static/css/dashboard.css" rel="stylesheet" />
+          <link href="/static/css/custom.css" rel="stylesheet" />
           <link href="/static/css/nprogress.css" rel="stylesheet" />
           {/* <link href="/static/css/react-select.min.css" rel="stylesheet" /> */}
-          <link href="/static/css/react-tabs.css" rel="stylesheet" />
+          {/* <link href="/static/css/react-tabs.css" rel="stylesheet" /> */}
           <link href="/static/css/react-table.min.css" rel="stylesheet" />
-          <link href="/static/css/react-draft-wysiwyg.css" rel="stylesheet" />
-          <link href="/static/css/quill.snow.css" rel="stylesheet" />
+          {/* <link href="/static/css/react-draft-wysiwyg.css" rel="stylesheet" /> */}
+          {/* <link href="/static/css/quill.snow.css" rel="stylesheet" /> */}
           {/* <link href="/static/css/react-toggle.css" rel="stylesheet" /> */}
           {/* <link href="/static/css/main2.min.css" rel="stylesheet" /> */}
           {/* <script

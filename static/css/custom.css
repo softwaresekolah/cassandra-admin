@@ -1,0 +1,16 @@
+.hoverable {
+  display: block;
+  transition: 0.2s;
+}
+.hoverable:hover.on-hover-shadow {
+  transition: 0.35s;
+  box-shadow: 0 0 11px rgba(33, 33, 33, 0.3);
+}
+.hoverable .on-hover-shown {
+  opacity: 0;
+  transition: 0.2s;
+}
+.hoverable:hover .on-hover-shown {
+  transition: 0.5s;
+  opacity: 1;
+}
