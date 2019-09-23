@@ -1,7 +1,6 @@
 let checkList = {
-  APP_BIND_PORT: true,
-  GRAPHQL_API_HOST: true,
-  GRAPHQL_API_PORT: true
+  APP_BIND_PORT: false,
+  GRAPHQL_API_PORT: false
 };
 require("dotenv").config();
 Object.keys(checkList).forEach(key => {
@@ -27,7 +26,7 @@ const expressApp = require("express")();
 const server = require("http").Server(expressApp);
 //
 
-const port = parseInt(process.env.APP_BIND_PORT, 10) || 3000;
+const port = parseInt(process.env.APP_BIND_PORT) || 8008;
 const dev = process.env.NODE_ENV !== "production";
 //
 
@@ -37,16 +36,12 @@ const nextHandler = nextApp.getRequestHandler();
 nextApp.prepare().then(() => {
   console.log(
     "Applying proxy for",
-    `http://${process.env.GRAPHQL_API_HOST}:${
-      process.env.GRAPHQL_API_PORT
-    }/graphql`
+    `http://localhost:${process.env.GRAPHQL_API_PORT || 8009}/graphql`
   );
   expressApp.use(
     "/api",
     proxyMiddleware({
-      target: `http://${process.env.GRAPHQL_API_HOST}:${
-        process.env.GRAPHQL_API_PORT
-      }`,
+      target: `http://localhost:${process.env.GRAPHQL_API_PORT || 8009}`,
       changeOrigin: true,
       pathRewrite: {
         "^/api": "/graphql"
@@ -70,8 +65,8 @@ nextApp.prepare().then(() => {
     return nextHandler(req, res);
   });
 
-  server.listen(parseInt(process.env.APP_BIND_PORT), err => {
+  server.listen(parseInt(port), err => {
     if (err) throw err;
-    console.log(`> Ready on http://localhost:${process.env.APP_BIND_PORT}`);
+    console.log(`> Ready on http://localhost:${port}`);
   });
 });

@@ -41,55 +41,7 @@ const headerMenu = [
     label: "Dashboard",
     icon: "home",
     isActive: isPathnameAndLinkMatch
-  },
-  {
-    link: "/daftar_alumni",
-    label: "Daftar Alumni",
-    icon: "address-book",
-    isActive: isPathnameAndLinkMatch
-  },
-  {
-    link: "/pencarian_alumni",
-    label: "Pencarian Alumni",
-    icon: "search",
-    isActive: isPathnameAndLinkMatch
-  },
-  // {
-  //   link: "/pengaturan/perusahaan",
-  //   label: "Perusahaan",
-  //   icon: "university",
-  //   isActive: isPathnameAndLinkMatch
-  // },
-  {
-    link: "/pengaturan/peran",
-    label: "Role User",
-    icon: "star",
-    isActive: isPathnameAndLinkMatch
-  },
-  {
-    link: "/pengaturan/user",
-    label: "Semua User",
-    icon: "users",
-    isActive: isPathnameAndLinkMatch
-  },
-  {
-    link: "/pesan",
-    label: "Pesan",
-    icon: "podcast",
-    isActive: isPathnameAndLinkMatch
-  },
-  {
-    link: "/aktivitas",
-    label: "Aktivitas",
-    icon: "images",
-    isActive: isPathnameAndLinkMatch
   }
-  // {
-  //   link: "/eksperimental",
-  //   label: "Fitur Eksperimental",
-  //   icon: "flask",
-  //   isActive: isPathnameAndLinkMatch
-  // }
   // {
   //   label: "Pengaturan",
   //   icon: "cog",
@@ -158,7 +110,7 @@ class Header extends Component {
             <div className="d-flex">
               <div className="d-flex">
                 <Link href="#">
-                  <a className="header-brand" style={{whiteSpace:"normal"}}>
+                  <a className="header-brand" style={{ whiteSpace: "normal" }}>
                     <img
                       src={appConfig.appIcon}
                       className="header-brand-img"

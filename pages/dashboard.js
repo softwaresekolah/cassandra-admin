@@ -88,8 +88,8 @@ class DashboardPage extends Component {
   }
 }
 
-export default protectAdminArea(props => (
+export default props => (
   <ApolloConsumer>
     {client => <DashboardPage {...props} client={client} />}
   </ApolloConsumer>
-));
+);

@@ -6,13 +6,7 @@ const {
   mergeSchemas,
   makeExecutableSchema
 } = require("apollo-server-express");
-const mongodbConnection = require("./mongodb-connection");
-const {
-  authenticate,
-  makeSureDefaultUsersAreExists
-} = require("./authentication");
-const { createLoaders } = require("./data-loader");
-const { buildActivityLogger } = require("./activity-logger");
+const { authenticate } = require("./authentication");
 
 const { lstatSync, readdirSync, existsSync } = require("fs");
 const { join } = require("path");
@@ -93,20 +87,12 @@ const schema = mergeSchemas({
 });
 
 const start = async () => {
-  const collection = await mongodbConnection();
-  await makeSureDefaultUsersAreExists(collection);
-
   const server = new ApolloServer({
     schema,
     context: async ({ req }) => {
       const activeSession = await authenticate(req);
-      const activityLogger = buildActivityLogger(collection, activeSession);
-      const loader = createLoaders(collection);
       return {
-        collection,
-        activeSession,
-        loader,
-        activityLogger
+        activeSession
       };
     },
     cors: true,
@@ -124,7 +110,7 @@ const start = async () => {
   const app = express();
   app.use(bodyParser.json({ limit: "20mb" }));
   server.applyMiddleware({ app });
-  const port = parseInt(process.env.GRAPHQL_API_PORT) || 4000;
+  const port = parseInt(process.env.GRAPHQL_API_PORT) || 8009;
   await app.listen({
     port
   });

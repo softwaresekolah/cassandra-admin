@@ -68,7 +68,7 @@ class LoginBox extends Component {
         </div>
         <form className="card mb-2" onSubmit={this.handleLogin}>
           <div className="card-body pt-6 pl-6 pr-6 pb-5">
-            <div className="card-title">Login Menggunakan Akun Anda</div>
+            <div className="card-title">Login Using Your User</div>
             <div className="form-group">
               <label className="form-label">Username</label>
               <input
@@ -109,7 +109,7 @@ class LoginBox extends Component {
             </label>
           </div> */}
             <div className="form-footer">
-              <button type="submit" className="btn btn-danger btn-block">
+              <button type="submit" className="btn btn-purple btn-block">
                 <i className="fa fa-user-shield" /> Login
               </button>
               {/* 
