@@ -119,7 +119,7 @@ const start = async () => {
     port
   });
   console.log(
-    `🚀  Server ready at http://localhost:${port}${server.graphqlPath}`
+    `🚀 GraphQL server ready at http://localhost:${port}${server.graphqlPath}`
   );
 };
 

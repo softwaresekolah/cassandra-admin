@@ -15,9 +15,7 @@ if (!process.browser) {
 function create(initialState, { getToken }) {
   const httpLink = createHttpLink({
     uri: !process.browser
-      ? `http://${process.env.GRAPHQL_API_HOST}:${
-          process.env.GRAPHQL_API_PORT
-        }/graphql`
+      ? `http://localhost:${process.env.GRAPHQL_API_PORT || 8009}/graphql`
       : "/api/graphql",
     credentials: "same-origin"
   });

@@ -10,7 +10,8 @@
     "start": "NODE_ENV=production node server/index.js",
     "analyze": "cross-env ANALYZE=1 next build",
     "dev-api": "nodemon graphql/index.js --watch graphql",
-    "start-api": "NODE_ENV=production node graphql/index.js"
+    "start-api": "NODE_ENV=production node graphql/index.js",
+    "deploy": "NODE_ENV=production concurrently --kill-others \"npm run start\" \"npm run start-api\""
   },
   "dependencies": {
     "apollo-boost": "^0.1.28",
@@ -23,6 +24,7 @@
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.18.3",
     "cassandra-driver": "^4.1.0",
+    "concurrently": "^4.1.2",
     "cookie": "^0.3.1",
     "cors": "^2.8.5",
     "dataloader": "^1.4.0",

@@ -67,6 +67,6 @@ nextApp.prepare().then(() => {
 
   server.listen(parseInt(port), err => {
     if (err) throw err;
-    console.log(`> Ready on http://localhost:${port}`);
+    console.log(`🚀 Web server ready on http://localhost:${port}`);
   });
 });
