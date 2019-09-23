@@ -12,6 +12,7 @@ const { lstatSync, readdirSync, existsSync } = require("fs");
 const { join } = require("path");
 const { composeTypeDefs } = require("./schema/helpers");
 const { merge } = require("lodash");
+const initCassandra = require("./cassandra");
 
 const isDirectory = source => lstatSync(source).isDirectory();
 const getDirectories = source =>
@@ -87,12 +88,14 @@ const schema = mergeSchemas({
 });
 
 const start = async () => {
+  const cassandra = initCassandra();
   const server = new ApolloServer({
     schema,
     context: async ({ req }) => {
       const activeSession = await authenticate(req);
       return {
-        activeSession
+        activeSession,
+        cassandra
       };
     },
     cors: true,
@@ -108,6 +111,7 @@ const start = async () => {
     }
   });
   const app = express();
+
   app.use(bodyParser.json({ limit: "20mb" }));
   server.applyMiddleware({ app });
   const port = parseInt(process.env.GRAPHQL_API_PORT) || 8009;

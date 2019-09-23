@@ -2019,7 +2019,7 @@ case-sensitive-paths-webpack-plugin@2.1.2:
 
 cassandra-driver@^4.1.0:
   version "4.1.0"
-  resolved "https://registry.yarnpkg.com/cassandra-driver/-/cassandra-driver-4.1.0.tgz#e13482289020596258d60026b3fcbd5570dcab00"
+  resolved "https://registry.npmjs.org/cassandra-driver/-/cassandra-driver-4.1.0.tgz#e13482289020596258d60026b3fcbd5570dcab00"
   integrity sha512-MHI8PcCCaPEa9DKsP+L6MsokrK5Twhu4UBb3reyEAezB0XFhu7DnjDcfWuDHpzmuCY3OSmgskO1pnoz1GsRIIA==
   dependencies:
     long "^2.2.0"

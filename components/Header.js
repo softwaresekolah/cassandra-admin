@@ -41,7 +41,7 @@ const headerMenu = [
     label: "Dashboard",
     icon: "home",
     isActive: isPathnameAndLinkMatch
-  }
+  },
   // {
   //   label: "Pengaturan",
   //   icon: "cog",
