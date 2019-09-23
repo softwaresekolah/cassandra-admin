@@ -6,6 +6,7 @@ import Head from "next/head";
 import appConfig from "../app.json";
 import { FormModal } from "../components/Modal";
 import gql from "graphql-tag";
+import orderBy from "lodash/orderBy";
 
 const FormKeyspaceModal = ({ handleInput, keyspace }) => (
   <div>
@@ -295,7 +296,11 @@ export default props => (
             client={client}
             error={error}
             loading={loading}
-            allKeyspaces={data && data.allKeyspaces ? data.allKeyspaces : []}
+            allKeyspaces={
+              data && data.allKeyspaces
+                ? orderBy(data.allKeyspaces, ["keyspace_name"], ["asc"])
+                : []
+            }
             refetch={refetch}
           />
         )}
