@@ -1,0 +1,6 @@
+[
+  {
+    "name": "Data Alumni",
+    "access": ["Create", "Read", "Update", "Delete"]
+  }
+]

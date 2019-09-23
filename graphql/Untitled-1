@@ -1,0 +1,646 @@
+const generateTransactionDetailsExcelReport = async (self, params, context) => {
+  assertValidSession(context.activeSession);
+  const foundEmployee = await context.collection("Employees").findOne({
+    _id: params.officerId
+  });
+  const foundTransactionGroups = await context
+    .collection("SchoolFinancialTransactions")
+    .find({
+      date: {
+        $gte: params.fromDate,
+        $lte: params.toDate
+      },
+      $or: [
+        {
+          type: params.selectIncome ? "GRUP_PENERIMAAN_LAIN" : null
+        },
+        {
+          type: params.selectExpense ? "GRUP_PENGELUARAN" : null
+        },
+        {
+          type: params.selectStudentSaving
+            ? {
+                $in: ["SETORAN_TABUNGAN_SISWA", "PENARIKAN_TABUNGAN_SISWA"]
+              }
+            : null
+        },
+        {
+          type: params.selectStudentPayment
+            ? "STUDENT_BILL_PAYMENT_GROUP"
+            : null
+        }
+      ],
+
+      "officer._id": foundEmployee
+        ? foundEmployee.accountId
+        : {
+            $exists: true
+          },
+      PREFIX,
+      ...NOT_DELETED_DOCUMENT_QUERY,
+      _deletedAt: {
+        $exists: false
+      },
+      cancellationTransactionId: {
+        $exists: false
+      }
+    })
+    .toArray();
+
+  // console.log(foundTransactionGroups)
+
+  const getGroupIds = foundTransactionGroups.map(t => t._id);
+
+  const foundTransactionDetails = await context
+    .collection("SchoolFinancialTransactions")
+    .find({
+      $or: [
+        {
+          groupId: {
+            $in: getGroupIds
+          }
+        },
+        {
+          _id: {
+            $in: getGroupIds
+          },
+          type: "SETORAN_TABUNGAN_SISWA"
+        },
+        {
+          _id: {
+            $in: getGroupIds
+          },
+          type: "PENARIKAN_TABUNGAN_SISWA"
+        }
+      ],
+      PREFIX,
+      _deletedAt: {
+        $exists: false
+      },
+      ...NOT_DELETED_DOCUMENT_QUERY
+    })
+    .toArray();
+
+  let studentBills = await context
+    .collection("StudentBills")
+    .find({
+      _id: params.selectBillAcademicYear
+        ? {
+            $in: foundTransactionDetails.map(b => b.studentBillId)
+          }
+        : {
+            $exists: true
+          },
+      PREFIX
+    })
+    .toArray();
+  // console.log(studentBills);
+
+  let billTypes = await context
+    .collection("StudentBillTypes")
+    .find({
+      _id: {
+        $in: studentBills.map(b => b.studentBillTypeId)
+      },
+      academicYear: params.selectBillAcademicYear
+        ? params.billAcademicYear
+        : {
+            $exists: true
+          },
+      PREFIX
+    })
+    .toArray();
+
+  // console.log(billTypes)
+
+  const payments = await context
+    .collection("PaymentMethods")
+    .find({
+      // _id: {
+      //   $in: foundTransactionDetails.map(p => p.paymentMethodId)
+      // },
+      ...NOT_DELETED_DOCUMENT_QUERY,
+      PREFIX
+    })
+    .toArray();
+
+  const posts = await context
+    .collection("FinancialAccounts")
+    .find({
+      PREFIX,
+      ...NOT_DELETED_DOCUMENT_QUERY
+    })
+    .toArray();
+
+  const students = await context
+    .collection("Students")
+    .find(
+      {
+        // _id: {
+        //   $in: foundTransactionDetails.map(
+        //     s => (s.studentId ? s.studentId : null)
+        //   )
+        // },
+        $or: [
+          {
+            status: "Aktif"
+          },
+          {
+            status: "Lulus"
+          }
+        ]
+      },
+      {
+        projection: {
+          _id: 1,
+          name: 1,
+          regNumber: 1,
+          classroomId: 1,
+          status: 1
+        }
+      }
+    )
+    .toArray();
+
+  const classrooms = await context
+    .collection("Classrooms")
+    .find(
+      {
+        _id: {
+          $in: students.map(c => c.classroomId)
+        }
+      },
+      {
+        projection: {
+          _id: 1,
+          name: 1
+        }
+      }
+    )
+    .toArray();
+
+  const savingPosts = await context.collection("FinancialAccounts").findOne({
+    useForStudentSaving: true,
+    ...NOT_DELETED_DOCUMENT_QUERY,
+    PREFIX
+  });
+
+  let indexed = transactionDetailIndexer({
+    students,
+    posts,
+    payments,
+    classrooms,
+    studentBills,
+    billTypes,
+    foundTransactionGroups
+  });
+
+  const informasiSekolah = await context
+    .collection("SchoolInformations")
+    .findOne({
+      PREFIX: process.env.SCHOOL_PREFIX
+        ? process.env.SCHOOL_PREFIX
+        : process.env.COLLECTION_PREFIX
+    });
+  const informasiYayasan = await context
+    .collection("FoundationInformations")
+    .findOne({ PREFIX: process.env.COLLECTION_PREFIX });
+  // console.log({ informasiSekolah, informasiYayasan })
+
+  const workbook = new Excel.Workbook();
+  workbook.creator = "School Talk";
+
+  const sheet = workbook.addWorksheet("Laporan Detil Transaksi");
+
+  let columnWidths = [5, 10, 25, 25, 20, 20, 30, 15, 30, 30, 35, 40, 25, 25];
+  let headerRow = [
+    "NO",
+    "TANGGAL",
+    "NOMOR TRANSAKSI",
+    "METODE PEMBAYARAN",
+    "PETUGAS",
+    "NIS",
+    "NAMA SISWA",
+    "KELAS",
+    "POS PENERIMAAN",
+    "POS PENGELUARAN",
+    "JENIS PEMBAYARAN SISWA",
+    "KETERANGAN",
+    "PENERIMAAN",
+    "PENGELUARAN"
+  ];
+
+  let colCounter = 0;
+  columnWidths.forEach(width => {
+    const column = ++colCounter;
+    excelHelper.setColumnWidth({
+      sheet,
+      column,
+      width
+    });
+  });
+
+  let rowCounter = 1;
+  let headerData = renderHeader(informasiSekolah, informasiYayasan)(1, 1, 1);
+  headerData.push({
+    text: " "
+  });
+  headerData.push({
+    text: "LAPORAN DETIL TRANSAKSI"
+  });
+  headerData.push({
+    text: `DARI TANGGAL ${format(
+      params.fromDate,
+      "DD-MM-YYYY"
+    )} SAMPAI ${format(params.toDate, "DD-MM-YYYY")}`
+  });
+  headerData.push({
+    text: " "
+  });
+
+  // console.log("headerData", headerData);
+  headerData.forEach(data => {
+    // console.log("data", data);
+    if (data && data.text) {
+      excelHelper.addText({
+        sheet,
+        row: rowCounter,
+        col: 1,
+        value: data.text,
+        alignment: {
+          vertical: "middle",
+          horizontal: "center"
+        },
+        font: {
+          bold: true
+        }
+      });
+      sheet.mergeCells(rowCounter, 1, rowCounter, columnWidths.length);
+      rowCounter++;
+    }
+  });
+
+  colCounter = 0;
+  rowCounter++;
+  headerRow.forEach(data => {
+    excelHelper.addText({
+      sheet,
+      row: rowCounter,
+      col: ++colCounter,
+      value: data,
+      font: { bold: true },
+      alignment: {
+        vertical: "middle",
+        horizontal: "center"
+      },
+      borderStyle: excelHelper.BorderStyle.Thin
+    });
+  });
+
+  let no = 0;
+
+  let transactionGroup;
+
+  let totalPenerimaan = 0,
+    totalPengeluaran = 0;
+
+  let incomePost, outcomePost, transactionPayment, foundClassroom, foundStudent;
+  for (const transaction of foundTransactionDetails) {
+    no++;
+    let billType;
+
+    if (transaction.type === "STUDENT_BILL_PAYMENT") {
+      const studentBill = indexed.studentBills[transaction.studentBillId];
+      if (studentBill) {
+        billType = indexed.billTypes[studentBill.studentBillTypeId];
+        if (billType) {
+          incomePost = indexed.posts[billType.incomeTypeId];
+        }
+      }
+
+      foundStudent = indexed.students[transaction.studentId];
+      if (foundStudent) {
+        const kelasId = foundStudent.classroomId;
+        foundClassroom = indexed.classrooms[kelasId];
+      }
+      transactionGroup = indexed.foundTransactionGroups[transaction.groupId];
+      transactionPayment = indexed.payments[transaction.paymentMethodId];
+    }
+
+    if (transaction.type === "PENERIMAAN_LAIN") {
+      transactionGroup = indexed.foundTransactionGroups[transaction.groupId];
+      transactionPayment = indexed.payments[transaction.paymentMethodId];
+      incomePost = indexed.posts[transaction.financialAccountId];
+
+      // console.log(transactionGroup)
+
+      //
+    } else if (transaction.type === "PENGELUARAN") {
+      transactionPayment = indexed.payments[transaction.paymentMethodId];
+      transactionGroup = indexed.foundTransactionGroups[transaction.groupId];
+      incomePost = indexed.posts[transaction.financialAccountIncomeId];
+      outcomePost = indexed.posts[transaction.financialAccountOutcomeId];
+    } else if (transaction.type === "SETORAN_TABUNGAN_SISWA") {
+      transactionPayment = indexed.payments[transaction.paymentMethodId];
+      incomePost = savingPosts;
+      foundStudent = indexed.students[transaction.studentId];
+
+      if (foundStudent) {
+        const kelasId = foundStudent.classroomId;
+        foundClassroom = indexed.classrooms[kelasId];
+      }
+
+      //
+    } else if (transaction.type === "PENARIKAN_TABUNGAN_SISWA") {
+      transactionPayment = indexed.payments[transaction.paymentMethodId];
+      foundStudent = indexed.students[transaction.studentId];
+      if (foundStudent) {
+        const kelasId = foundStudent.classroomId;
+        foundClassroom = indexed.classrooms[kelasID];
+      }
+      outcomePost = savingPosts;
+    }
+
+    // if (foundStudent) {
+    totalPenerimaan += transaction.debit;
+    totalPengeluaran += transaction.credit;
+    colCounter = 0;
+    rowCounter++;
+    excelHelper.addText({
+      sheet,
+      row: rowCounter,
+      col: ++colCounter,
+      value: no,
+      font: { bold: false },
+      alignment: {
+        vertical: "middle",
+        horizontal: "left"
+      },
+      borderStyle: excelHelper.BorderStyle.Thin
+    });
+
+    excelHelper.addText({
+      sheet,
+      row: rowCounter,
+      col: ++colCounter,
+      value: format(transaction.date, "DD-MM-YYYY"),
+      font: { bold: false },
+      alignment: {
+        vertical: "middle",
+        horizontal: "left"
+      },
+      borderStyle: excelHelper.BorderStyle.Thin
+    });
+
+    excelHelper.addText({
+      sheet,
+      row: rowCounter,
+      col: ++colCounter,
+      value: transaction.transactionNumber,
+      font: { bold: false },
+      alignment: {
+        vertical: "middle",
+        horizontal: "left"
+      },
+      borderStyle: excelHelper.BorderStyle.Thin
+    });
+u
+    excelHelper.addText({
+      sheet,
+      row: rowCounter,
+      col: ++colCounter,
+      value: transactionPayment ? transactionPayment.name : "-",
+      font: { bold: false },
+      alignment: {
+        vertical: "middle",
+        horizontal: "left"
+      },
+      borderStyle: excelHelper.BorderStyle.Thin
+    });
+
+    //=========== OFFICER ==========//
+    excelHelper.addText({
+      sheet,
+      row: rowCounter,
+      col: ++colCounter,
+      // value: transactionGroup ? transactionGroup.officer.name : "-",
+      value:
+        transaction.type === "SETORAN_TABUNGAN_SISWA" ||
+        transaction.type === "PENARIKAN_TABUNGAN_SISWA"
+          ? transaction.officer.name
+          : transactionGroup
+          ? transactionGroup.officer.name
+          : "-",
+      font: { bold: false },
+      alignment: {
+        vertical: "middle",
+        horizontal: "left"
+      },
+      borderStyle: excelHelper.BorderStyle.Thin
+    });
+    //==============================//
+    excelHelper.addText({
+      sheet,
+      row: rowCounter,
+      col: ++colCounter,
+      value:
+        transaction.type === "PENERIMAAN_LAIN" ||
+        transaction.type === "PENGELUARAN"
+          ? "-"
+          : foundStudent
+          ? foundStudent.regNumber
+          : "-",
+      font: { bold: false },
+      alignment: {
+        vertical: "middle",
+        horizontal: "left"
+      },
+      borderStyle: excelHelper.BorderStyle.Thin
+    });
+
+    excelHelper.addText({
+      sheet,
+      row: rowCounter,
+      col: ++colCounter,
+      value:
+        transaction.type === "PENERIMAAN_LAIN" ||
+        transaction.type === "PENGELUARAN"
+          ? "-"
+          : foundStudent
+          ? foundStudent.name
+          : "-",
+      font: { bold: false },
+      alignment: {
+        vertical: "middle",
+        horizontal: "left"
+      },
+      borderStyle: excelHelper.BorderStyle.Thin
+    });
+
+    excelHelper.addText({
+      sheet,
+      row: rowCounter,
+      col: ++colCounter,
+      value:
+        transaction.type === "PENERIMAAN_LAIN" ||
+        transaction.type === "PENGELUARAN"
+          ? "-"
+          : foundClassroom
+          ? foundClassroom.name
+          : "-",
+      font: { bold: false },
+      alignment: {
+        vertical: "middle",
+        horizontal: "left"
+      },
+      borderStyle: excelHelper.BorderStyle.Thin
+    });
+
+    excelHelper.addText({
+      sheet,
+      row: rowCounter,
+      col: ++colCounter,
+      value: incomePost ? incomePost.name : "-",
+      font: { bold: false },
+      alignment: {
+        vertical: "middle",
+        horizontal: "left"
+      },
+      borderStyle: excelHelper.BorderStyle.Thin
+    });
+
+    excelHelper.addText({
+      sheet,
+      row: rowCounter,
+      col: ++colCounter,
+      value:
+        transaction.type === "PENERIMAAN_LAIN" ||
+        transaction.type === "STUDENT_BILL_PAYMENT"
+          ? "-"
+          : outcomePost
+          ? outcomePost.name
+          : "-",
+      font: { bold: false },
+      alignment: {
+        vertical: "middle",
+        horizontal: "left"
+      },
+      borderStyle: excelHelper.BorderStyle.Thin
+    });
+
+    //===========JENIS PEMBAYARAN SISWA===========//
+    excelHelper.addText({
+      sheet,
+      row: rowCounter,
+      col: ++colCounter,
+      value: billType ? billType.name : "-",
+      font: { bold: false },
+      alignment: {
+        vertical: "middle",
+        horizontal: "left"
+      },
+      borderStyle: excelHelper.BorderStyle.Thin
+    });
+    //=====================================//
+
+    excelHelper.addText({
+      sheet,
+      row: rowCounter,
+      col: ++colCounter,
+      value: transaction.description,
+      font: { bold: false },
+      alignment: {
+        vertical: "middle",
+        horizontal: "left"
+      },
+      borderStyle: excelHelper.BorderStyle.Thin
+    });
+
+    excelHelper.addText({
+      sheet,
+      row: rowCounter,
+      col: ++colCounter,
+      value:
+        transaction.type === "SETORAN_TABUNGAN_SISWA" ||
+        transaction.type === "STUDENT_BILL_PAYMENT" ||
+        transaction.type === "PENERIMAAN_LAIN"
+          ? transaction.debit
+          : "Rp. 0.00",
+      numFmt: currencyFormat,
+      font: { bold: false },
+      alignment: {
+        vertical: "middle",
+        horizontal: "right"
+      },
+      borderStyle: excelHelper.BorderStyle.Thin
+    });
+
+    excelHelper.addText({
+      sheet,
+      row: rowCounter,
+      col: ++colCounter,
+      value:
+        transaction.type === "PENARIKAN_TABUNGAN_SISWA" ||
+        transaction.type === "PENGELUARAN"
+          ? // ? `Rp. ${formatCurrency(transaction.credit)}`
+            // : `Rp. ${formatCurrency(0)}`,
+            transaction.credit
+          : "Rp. 0.00",
+      numFmt: currencyFormat,
+      font: { bold: false },
+      alignment: {
+        vertical: "middle",
+        horizontal: "right"
+      },
+      borderStyle: excelHelper.BorderStyle.Thin
+    });
+  }
+
+  excelHelper.addText({
+    sheet,
+    row: ++rowCounter,
+    col: 12,
+    value: "TOTAL",
+    font: { bold: true },
+    alignment: {
+      vertical: "middle",
+      horizontal: "left"
+    },
+    borderStyle: excelHelper.BorderStyle.Thin
+  });
+
+  excelHelper.addText({
+    sheet,
+    row: rowCounter++,
+    col: 13,
+    // value: `Rp. ${formatCurrency(totalPenerimaan)}`,
+    value: totalPenerimaan,
+    numFmt: currencyFormat,
+    font: { bold: true },
+    alignment: {
+      vertical: "middle",
+      horizontal: "right"
+    },
+    borderStyle: excelHelper.BorderStyle.Thin
+  });
+
+  excelHelper.addText({
+    sheet,
+    row: rowCounter - 1,
+    col: 14,
+    // value: `Rp. ${formatCurrency(totalPengeluaran)}`,
+    value: totalPengeluaran,
+    numFmt: currencyFormat,
+    font: { bold: true },
+    alignment: {
+      vertical: "middle",
+      horizontal: "right"
+    },
+    borderStyle: excelHelper.BorderStyle.Thin
+  });
+
+  await workbook.xlsx.writeFile(__dirname + "/laporan_detail_transaksi.xlsx");
+  const bitmap = fs.readFileSync(__dirname + "/laporan_detail_transaksi.xlsx");
+  const xlsx64 = new Buffer(bitmap).toString("base64");
+  return xlsx64;
+};

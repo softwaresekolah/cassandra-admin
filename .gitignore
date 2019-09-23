@@ -1,0 +1,10 @@
+node_modules/
+.session
+.next/
+release/
+.DS_Store
+.env
+.env.production
+static/cache/
+static/img/uploads
+tmp_impor.xlsx
