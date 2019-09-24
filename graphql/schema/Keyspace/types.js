@@ -3,19 +3,17 @@ const Keyspace = `
     keyspace_name: String
     durable_writes: Boolean
     replication: String
+    countTables: Int
   }
-
   input Replication {
     class: String
     replication_factor: Int
   }
-
-  
 `;
 exports.customTypes = [Keyspace];
 exports.rootTypes = `
   type Query {
-    allKeyspaces: [Keyspace]
+    allKeyspaces: [Keyspace] 
   }
 
   type Mutation {

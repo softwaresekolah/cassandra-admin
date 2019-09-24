@@ -6,7 +6,7 @@ const resolvers = {
         `SELECT * FROM ${params.table_name} LIMIT 100;`
       );
       return results.rows.map(result => JSON.stringify(result));
-    },
+    }, 
     countRowsByTableAndKeyspace: async (self, params, context) => {
       await context.cassandra.execute(`USE ${params.keyspace_name};`);
       const results = await context.cassandra.execute(
