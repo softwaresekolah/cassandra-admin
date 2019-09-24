@@ -2,10 +2,11 @@ const cassandra = require("cassandra-driver");
 
 const initCassandra = () => {
   const client = new cassandra.Client({
-    contactPoints: ["127.0.0.1"],
-    localDataCenter: "datacenter1"
+    contactPoints: process.env.CONTACT_POINTS
+      ? process.env.CONTACT_POINTS.split(",").map(point => ("" + point).trim())
+      : ["127.0.0.1"],
+    localDataCenter: process.env.LOCAL_DATA_CENTER || "datacenter1"
   });
-
   client.connect(err => {
     if (err) {
       console.log("Error connect to cassandra : ", err);
@@ -17,14 +18,7 @@ const initCassandra = () => {
       );
     }
   });
-
-  // client.execute("SELECT * FROM system_schema.keyspaces", function(err, result) {
-  //   if (err) return console.error(err);
-  //   const row = result.first();
-  //   console.log(row);
-  // });
-
-  return client
+  return client;
 };
 
 module.exports = initCassandra;
