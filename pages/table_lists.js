@@ -302,7 +302,7 @@ class TableLists extends Component {
           <br />
 
           <h4 className="float-left mt-2">
-            <i className="fa fa-database" />
+            <i className="fa fa-database" /> 
             &nbsp; Tables under <i>
               `{this.props.router.query.keyspace_name}`
             </i>{" "}

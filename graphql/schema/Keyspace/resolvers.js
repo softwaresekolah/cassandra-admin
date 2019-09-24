@@ -9,6 +9,18 @@ const resolvers = {
         ...res,
         replication: JSON.stringify(res.replication)
       }));
+    },
+    info: async (self, params, context) => {
+      // const results = await context.cassandra.execute(
+      //   `SELECT * FROM system.local`
+      // );
+      // return results.rows.map(result => JSON.stringify(result));
+      const results = await context.cassandra.execute(
+        `SELECT * FROM system.local`
+      );
+      if(results && results.rows[0]){
+        return JSON.stringify(results.rows[0]);
+      }
     }
   },
 

@@ -76,7 +76,7 @@ const FormKeyspaceModal = ({ handleInput, keyspace }) => (
   </div>
 );
 
-class DashboardPage extends Component {
+class Keyspaces extends Component {
   state = {
     new_keyspace: {
       keyspace_name: "",
@@ -90,7 +90,6 @@ class DashboardPage extends Component {
       class: "",
       durable_writes: false
     },
-    info: "",
     addNewKeyspaceVisible: false,
     alterKeyspaceVisible: false
   };
@@ -299,38 +298,160 @@ class DashboardPage extends Component {
   };
 
   render() {
-    let info = this.props.info;
     return (
       <AdminArea withoutFooter>
         <Head>
           <title>Dashboard | {appConfig.appName}</title>
         </Head>
 
+        <FormModal
+          title={
+            <span>
+              <i className="fa fa-plus-circle" /> New Keyspace
+            </span>
+          }
+          visible={this.state.addNewKeyspaceVisible}
+          onClose={this.closeNewKeyspace}
+          onSubmit={this.handleSubmitNewKeypsace}
+        >
+          <FormKeyspaceModal
+            keyspace={this.state.new_keyspace}
+            handleInput={this.handleInputNewKeyspace}
+          />
+        </FormModal>
+
+        <FormModal
+          title={
+            <span>
+              <i className="fa fa-edit" /> Alter Keyspace
+            </span>
+          }
+          visible={this.state.alterKeyspaceVisible}
+          onClose={this.closeAlterKeyspace}
+          onSubmit={this.handleSubmitAlterKeys}
+        >
+          <FormKeyspaceModal
+            keyspace={this.state.alter_keyspace}
+            handleInput={this.handleInputAlterKeyspace}
+          />
+        </FormModal>
+
         <div className="container-fluid">
           <div className="row">
             <div className="col-md-12">
-              <div className="card shadow-sm">
-                <div className="card-body">
-                  <h3 className="fa-pull-left">
-                    <i className="fa fa-info-circle" /> Node Info
+              <h3 className="fa-pull-left">
+                <i className="fa fa-info-circle" /> All Keyspaces
               </h3>
-                  <div className="clearfix" />
-                  <hr className="mt-2" />
-                  <div className="row">
-                    {
-                      Object.keys(info).map(key =>
-                        <div className="col-md-6">
-                          {console.log(info)}
-                          <div key={key} className="form-group">
-                            <label>{key}</label>
-                            <input type="text" className="form-control" defaultValue={info[key]} />
-                          </div>
-                        </div>)
-                    }
-                  </div>
-                </div>
+              <div className="fa-pull-right hoverable on-hover-shadow">
+                <button
+                  className="btn btn-success btn-block"
+                  onClick={this.openNewKeyspace}
+                >
+                  <i className="fa fa-plus-circle" /> Add New Keyspace
+                </button>
               </div>
+              <div className="clearfix" />
+              <hr className="mt-2" />
             </div>
+
+            {this.props.allKeyspaces.map(ks => {
+              if (ks.keyspace_name.includes("system")) {
+                return (
+                  <div
+                    className="col-md-4"
+                    key={ks.keyspace_name}
+                    onClick={this.handleSelectKeyspace(ks)}
+                  >
+                    <div className="card hoverable on-hover-shadow">
+                      <div className="card-status bg-primary" />
+                      <div className="card-body">
+                        <h4>
+                          <i className="fa fa-database" /> {ks.keyspace_name}{" "}
+                          <button className="btn btn-secondary btn-sm on-hover-shown">
+                            <i className="fa fa-mouse-pointer" /> SELECT
+                          </button>
+                        </h4>
+                        <div className="fa-pull-left text-secondary">
+                          <span>
+                            <i className="fa fa-exclamation-circle" /> System
+                            Keyspace
+                          </span>
+                          <br />
+                          <span className={ks.countTables ? "" : "text-danger"}>
+                            Has {ks.countTables} table(s).
+                          </span>
+                        </div>
+                        <div className="fa-pull-right on-hover-shown">
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-sm"
+                            disabled
+                          >
+                            ALTER
+                          </button>
+                          &nbsp;&nbsp;
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-sm"
+                            disabled
+                          >
+                            DROP
+                          </button>
+                        </div>
+                        <div className="clearfix"></div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              } else {
+                return (
+                  <div
+                    className="col-md-4"
+                    key={ks.keyspace_name}
+                    onClick={this.handleSelectKeyspace(ks)}
+                  >
+                    <div className="card hoverable on-hover-shadow">
+                      <div className="card-status bg-success" />
+                      <div className="card-body">
+                        <h4>
+                          <i className="fa fa-database" /> {ks.keyspace_name}{" "}
+                          <button className="btn btn-secondary btn-sm on-hover-shown">
+                            <i className="fa fa-mouse-pointer" /> SELECT
+                          </button>
+                        </h4>
+                        <div className="fa-pull-left text-secondary">
+                          <span>
+                            <i className="fa fa-check-circle" /> User Keyspace
+                          </span>
+                          <br />
+                          <span className={ks.countTables ? "" : "text-danger"}>
+                            Has {ks.countTables} table(s).
+                          </span>
+                        </div>
+                        <div className="fa-pull-right on-hover-shown">
+                          <button
+                            type="button"
+                            className="btn btn-primary btn-sm"
+                            onClick={this.openAlterKeyspace(ks)}
+                          >
+                            ALTER
+                          </button>
+                          &nbsp;&nbsp;
+                          <button
+                            type="button"
+                            className="btn btn-danger btn-sm"
+                            onClick={this.handleDropKeyspace(ks)}
+                          >
+                            DROP
+                          </button>
+                        </div>
+                        <div className="clearfix"></div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+            })}
           </div>
         </div>
       </AdminArea>
@@ -345,7 +466,6 @@ const KEYSPACE_QUERIES = gql`
       replication
       countTables
     }
-    info
   }
 `;
 
@@ -398,7 +518,7 @@ export default props => (
                 {createKeyspace => (
                   <Query query={KEYSPACE_QUERIES}>
                     {({ error, loading, data, refetch }) => (
-                      <DashboardPage
+                      <Keyspaces
                         {...props}
                         client={client}
                         error={error}
@@ -406,13 +526,12 @@ export default props => (
                         allKeyspaces={
                           data && data.allKeyspaces
                             ? orderBy(
-                              data.allKeyspaces,
-                              ["keyspace_name"],
-                              ["asc"]
-                            )
+                                data.allKeyspaces,
+                                ["keyspace_name"],
+                                ["asc"]
+                              )
                             : []
                         }
-                        info={data && data.info ? JSON.parse(data.info) : ""}
                         refetch={refetch}
                         createKeyspace={createKeyspace}
                         dropKeyspace={dropKeyspace}
