@@ -377,7 +377,9 @@ class DashboardPage extends Component {
                             Keyspace
                           </span>
                           <br />
-                          Has {ks.countTables} table(s).
+                          <span className={ks.countTables ? "" : "text-danger"}>
+                            Has {ks.countTables} table(s).
+                          </span>
                         </div>
                         <div className="fa-pull-right on-hover-shown">
                           <button
@@ -422,7 +424,9 @@ class DashboardPage extends Component {
                             <i className="fa fa-check-circle" /> User Keyspace
                           </span>
                           <br />
-                          Has {ks.countTables} table(s).
+                          <span className={ks.countTables ? "" : "text-danger"}>
+                            Has {ks.countTables} table(s).
+                          </span>
                         </div>
                         <div className="fa-pull-right on-hover-shown">
                           <button
