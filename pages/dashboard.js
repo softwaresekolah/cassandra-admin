@@ -17,8 +17,8 @@ const FormKeyspaceModal = ({ handleInput, keyspace }) => (
       <label>Keyspace Name</label>
       <input
         className="form-control"
-        disabled={keyspace.keyspace_name !== ""}
         value={keyspace.keyspace_name}
+        disabled={keyspace.editStatus ? true : false}
         onChange={handleInput("keyspace_name")}
       />
     </div>
@@ -235,7 +235,8 @@ class DashboardPage extends Component {
         keyspace_name: selectedKeyspace.keyspace_name,
         replication_factor: parseInt(replication.replication_factor),
         class: replication.class,
-        durable_writes: selectedKeyspace.durable_writes
+        durable_writes: selectedKeyspace.durable_writes,
+        editStatus: true
       },
       alterKeyspaceVisible: true
     });
