@@ -376,6 +376,8 @@ class DashboardPage extends Component {
                             <i className="fa fa-exclamation-circle" /> System
                             Keyspace
                           </span>
+                          <br />
+                          Has {ks.countTables} table(s).
                         </div>
                         <div className="fa-pull-right on-hover-shown">
                           <button
@@ -419,6 +421,8 @@ class DashboardPage extends Component {
                           <span>
                             <i className="fa fa-check-circle" /> User Keyspace
                           </span>
+                          <br />
+                          Has {ks.countTables} table(s).
                         </div>
                         <div className="fa-pull-right on-hover-shown">
                           <button
@@ -456,6 +460,7 @@ const KEYSPACE_QUERIES = gql`
       keyspace_name
       durable_writes
       replication
+      countTables
     }
   }
 `;

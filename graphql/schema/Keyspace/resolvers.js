@@ -37,18 +37,14 @@ const resolvers = {
       return "ok";
     }
   },
-  Keyspace:{
-    countTables: async(self,params,context) => {
+  Keyspace: {
+    countTables: async (self, params, context) => {
       const results = await context.cassandra.execute(
-        `SELECT COUNT(*) FROM system_schema.keyspaces WHERE keyspace_name='${self.keyspace_name}'`
+        `SELECT COUNT(*) FROM system_schema.tables WHERE keyspace_name='${self.keyspace_name}'`
       );
-      console.log(`SELECT COUNT(*) FROM system_schema.keyspaces WHERE keyspace_name='${self.keyspace_name}'`)
-      // console.log(results)
       return parseInt(results.rows[0].count);
     }
   }
 };
 
 exports.resolvers = resolvers;
-// SELECT * FROM system_schema.tables 
-// WHERE keyspace_name = 'cycling';
