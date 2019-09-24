@@ -16,14 +16,27 @@ class TableLists extends Component {
     allTables: []
   };
 
+  handleSelectTable = selectedTable => e => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    Router.push({
+      pathname: "/table_rows",
+      query: {
+        keyspace_name: this.props.router.query.keyspace_name,
+        table_name: selectedTable.table_name
+      }
+    });
+  };
+
   render() {
-    const { allTables } = this.state;
     return (
       <AdminArea withoutFooter>
         <Head>
           <title>Dashboard | {appConfig.appName}</title>
         </Head>
-        <div className="container-fluid">
+        <div>
           <div className="row">
             <div className="col-md-6">
               <div className="text-left float-left">
@@ -58,7 +71,10 @@ class TableLists extends Component {
           <div className="row">
             {this.props.allTables.map(table => (
               <div className="col-md-12 pl-6" key={table.table_name}>
-                <div className="card hoverable on-hover-shadow mb-3">
+                <div
+                  className="card hoverable on-hover-shadow mb-3"
+                  onClick={this.handleSelectTable(table)}
+                >
                   {this.props.router.query.keyspace_name.includes("system") ? (
                     <div
                       className={"card-status bg-primary card-status-left"}
@@ -74,6 +90,32 @@ class TableLists extends Component {
                         <i className="fa fa-list" />
                         &nbsp; {table.table_name}
                       </h5>
+                      <Query
+                        query={COUNT}
+                        variables={{
+                          keyspace_name: this.props.router.query.keyspace_name,
+                          table_name: table.table_name
+                        }}
+                      >
+                        {({ error, loading, data }) =>
+                          loading ? (
+                            <div className="text-secondary ml-5">
+                              <i className="fa fa-spinner fa-spin" /> Counting
+                              rows...
+                            </div>
+                          ) : error ? (
+                            <div className="text-danger ml-5">
+                              <i className="fa fa-exclamation-triangle" /> Could
+                              not get row count at the moment ({error.message}).
+                            </div>
+                          ) : (
+                            <div className="text-secondary ml-5 mt-1">
+                              This table has{" "}
+                              <b>{data.countRowsByTableAndKeyspace} row(s).</b>
+                            </div>
+                          )
+                        }
+                      </Query>
                       {table.Columns.length === 0 ? (
                         <div className="text-secondary ml-5">
                           Have no column(s).
@@ -85,22 +127,35 @@ class TableLists extends Component {
                         </div>
                       )}
                     </div>
-                    {this.props.router.query.keyspace_name.includes(
-                      "system"
-                    ) ? null : (
-                      <div className="float-right on-hover-shown">
-                        <button
-                          type="button"
-                          className="btn btn-primary btn-sm"
-                        >
-                          ALTER
-                        </button>
-                        &nbsp;&nbsp;
-                        <button type="button" className="btn btn-danger btn-sm">
-                          DROP
-                        </button>
-                      </div>
-                    )}
+                    <div className="float-right on-hover-shown">
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        onClick={this.handleSelectTable(table)}
+                      >
+                        <i className="fa fa-search" /> VIEW
+                      </button>
+                      {this.props.router.query.keyspace_name.includes(
+                        "system"
+                      ) ? null : (
+                        <span>
+                          &nbsp;&nbsp;
+                          <button
+                            type="button"
+                            className="btn btn-primary btn-sm"
+                          >
+                            ALTER
+                          </button>
+                          &nbsp;&nbsp;
+                          <button
+                            type="button"
+                            className="btn btn-danger btn-sm"
+                          >
+                            DROP
+                          </button>
+                        </span>
+                      )}
+                    </div>
                     <div className="clearfix" />
                   </div>
                 </div>
@@ -123,6 +178,18 @@ const QUERY = gql`
         kind
       }
     }
+  }
+`;
+
+const COUNT = gql`
+  query countRowsByTableAndKeyspace(
+    $keyspace_name: String!
+    $table_name: String!
+  ) {
+    countRowsByTableAndKeyspace(
+      keyspace_name: $keyspace_name
+      table_name: $table_name
+    )
   }
 `;
 
