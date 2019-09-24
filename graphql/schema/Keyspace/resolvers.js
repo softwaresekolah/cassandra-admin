@@ -15,7 +15,15 @@ const resolvers = {
   Mutation: {
     createKeyspace: async (self, params, context) => {
       await context.cassandra.execute(
-        `CREATE KEYSPACE IF NOT EXISTS ${params.keyspace_name} WITH replication = { 'class': '${params.replication.class}', 'replication_factor': '${params.replication.replication_factor}'} AND durable_writes = '${params.durable_writes}';`
+        `CREATE KEYSPACE IF NOT EXISTS ${params.keyspace_name} WITH replication = { 'class': '${params.class}', 'replication_factor': '${params.replication_factor}'} AND durable_writes = '${params.durable_writes}';`
+      );
+
+      return "ok";
+    },
+
+    alterKeyspace: async (self, params, context) => {
+      await context.cassandra.execute(
+        `ALTER KEYSPACE ${params.keyspace_name} WITH replication = {'class': '${params.class}', 'replication_factor': '${params.replication_factor}'} AND durable_writes = '${params.durable_writes}'`
       );
 
       return "ok";

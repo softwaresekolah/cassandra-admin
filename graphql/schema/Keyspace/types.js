@@ -20,13 +20,21 @@ exports.rootTypes = `
 
   type Mutation {
     createKeyspace(
-      keyspace_name: String
-      durable_writes: Boolean
-      replication: Replication
+      keyspace_name: String!
+      durable_writes: Boolean!
+      class: String!
+      replication_factor: Int!
+    ): String!
+
+    alterKeyspace(
+      keyspace_name: String!,
+      durable_writes: Boolean!
+      class: String!
+      replication_factor: Int!
     ): String!
 
     dropKeyspace(
-      keyspace_name: String
+      keyspace_name: String!
     ): String!
   }
 
