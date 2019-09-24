@@ -2,6 +2,25 @@ const Table = `
   enum ColumnType {
     text
     int
+    varchar
+    boolean
+    varint
+    uuid
+    tinyint
+    timeuuid
+    timestamp
+    time
+    smallint
+    float
+    inet
+    duration
+    double
+    decimal
+    counter
+    blob
+    bigint
+    ascii
+
   }
   type Table {
     table_name: String
