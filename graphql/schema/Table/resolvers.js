@@ -53,7 +53,7 @@ const resolvers = {
           `ALTER TABLE ${params.keyspace_name}.${params.table_name} ADD (${stringQuery})`
         );
       } catch (err) {
-        throw new Error("Error, Keyspace not found: ", err);
+        console.log(err);
         return err;
       }
 
