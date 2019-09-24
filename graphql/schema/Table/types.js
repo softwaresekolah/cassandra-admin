@@ -5,10 +5,9 @@ const Table = `
   }
 
   type Column {
-    isPrimaryKey: Boolean
-    isStatic: Boolean
-    type: String
     column_name: String
+    type: String
+    kind: String
   }
 
   input ColumnPayload {
@@ -21,10 +20,10 @@ const Table = `
 
 exports.customTypes = [Table];
 exports.rootTypes = `
-
   type Query {
     allTablesByKeyspace(keyspace_name: String!): [Table]
   }
+
   type Mutation {
     createTable(table_name: String!, column: [ColumnPayload]): String!
   }

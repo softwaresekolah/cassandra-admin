@@ -214,7 +214,7 @@ class DashboardPage extends Component {
 
     // console.log("handleSelectKeyspace", { selectedKeyspace });
 
-    Router.replace({
+    Router.push({
       pathname: "/table_lists",
       query: {
         ...selectedKeyspace
@@ -379,8 +379,8 @@ class DashboardPage extends Component {
                         <div className="fa-pull-right on-hover-shown">
                           <button
                             type="button"
-                            className="btn btn-primary btn-sm"
-                            onClick={this.openAlterKeyspace(ks)}
+                            className="btn btn-secondary btn-sm"
+                            disabled
                           >
                             ALTER
                           </button>

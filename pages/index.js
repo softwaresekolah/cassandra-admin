@@ -8,17 +8,18 @@ import LoginBox from "../components/LoginBox";
 
 class IndexPage extends Component {
   static async getInitialProps(context) {
-    const { loggedInUser } = await checkLoggedIn(context.apolloClient);
-    // console.log({
-    //   currentUser: loggedInUser.currentUser,
-    //   undefined: typeof loggedInUser.currentUser === "undefined",
-    //   null: loggedInUser.currentUser === null
-    // });
-    if (loggedInUser.currentUser) {
-      redirect(context, "/dashboard");
-    } else if (typeof loggedInUser.currentUser === "undefined") {
-      return { errorCode: 500 };
-    }
+    redirect(context, "/dashboard");
+    // const { loggedInUser } = await checkLoggedIn(context.apolloClient);
+    // // console.log({
+    // //   currentUser: loggedInUser.currentUser,
+    // //   undefined: typeof loggedInUser.currentUser === "undefined",
+    // //   null: loggedInUser.currentUser === null
+    // // });
+    // if (loggedInUser.currentUser) {
+    //   redirect(context, "/dashboard");
+    // } else if (typeof loggedInUser.currentUser === "undefined") {
+    //   return { errorCode: 500 };
+    // }
     return {};
   }
 
