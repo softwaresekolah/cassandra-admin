@@ -39,7 +39,7 @@ const headerMenu = [
   {
     link: "/dashboard",
     label: "Dashboard",
-    icon: "home",
+    icon: "tachometer-alt",
     isActive: isPathnameAndLinkMatch
   },
   {

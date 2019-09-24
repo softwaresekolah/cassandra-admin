@@ -11,8 +11,6 @@ const resolvers = {
 
   Mutation: {
     createTable: async (self, params, context) => {
-      console.log(params.column)
-
       let stringQuery = "";
       for (const c of params.column) {
         stringQuery += `${c.column_name} ${c.type} ${
@@ -21,18 +19,13 @@ const resolvers = {
       }
 
       stringQuery = stringQuery.split(" ,").join("");
-      // console.log(stringQuery);
-
       try {
-        // await context.cassandra.execute(`USE ${params.keyspace_name}`);
-
         await context.cassandra.execute(
           `CREATE TABLE IF NOT EXISTS ${params.keyspace_name}.${params.table_name}(${stringQuery})`
           // [],
           // { keyspace: params.keyspace_name }
         );
       } catch (err) {
-        throw new Error("Error, Keyspace not found: ", err);
         return err;
       }
       return "ok";
@@ -53,7 +46,6 @@ const resolvers = {
           `ALTER TABLE ${params.keyspace_name}.${params.table_name} ADD (${stringQuery})`
         );
       } catch (err) {
-        console.log(err);
         return err;
       }
 
@@ -69,7 +61,6 @@ const resolvers = {
         );
       } catch (err) {
         throw new Error("Error, Keyspace not found: ", err);
-        return err;
       }
       return "ok";
     }

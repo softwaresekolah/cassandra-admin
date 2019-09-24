@@ -280,7 +280,6 @@ class PeranPage extends Component {
   };
 
   render() {
-    console.log();
     return (
       <AdminArea withoutFooter>
         <Head>

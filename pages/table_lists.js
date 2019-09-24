@@ -44,58 +44,88 @@ const FormTableModal = ({
 }) => (
   <div>
     <div className="form-group">
-      <label>Table Name</label>
+      <label>
+        <b>Table Name *</b>
+      </label>
       <input
         className="form-control"
         value={tableObject.name}
         onChange={handleInput}
       />
     </div>
+    <hr className="my-2" />
+    <label>
+      <b>Table Columns *</b>
+    </label>
     {tableObject.columns.map(column => (
-      <div className="row" style={{ marginBottom: 10 }}>
-        <div className="col-md-4">
-          <div className="form-group">
-            <label>Column Name</label>
-            <input
-              className="form-control"
-              value={column.column_name}
-              onChange={handleInputColumn("column_name", column)}
-            />
-          </div>
-        </div>
-        <div className="col-md-4">
-          <div className="form-group">
-            <label>Type</label>
-            <select
-              className="form-control"
-              onChange={handleInputColumn("type", column)}
-              value={column.type}
-            >
-              {DATA_TYPES.map(type => (
-                <option value={type}>{type}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-        <div className="col-md-4">
-          <div className="form-group">
-            <label>Kind</label>
-            <select
-              className="form-control"
-              onChange={handleInputColumn("kind", column)}
-              value={column.kind}
-            >
-              <option value="partition_key">Partition Key</option>
-              <option value="regular">Regular</option>
-            </select>
+      <div
+        className="card card-shadow hoverable on-hover-shadow mb-3"
+        key={column._id}
+        style={{ borderRadius: 0 }}
+      >
+        <div className="card-body py-1 px-3">
+          <div className="row">
+            <div className="col-md-4">
+              <div className="form-group m-0">
+                <label className="m-0">
+                  <small>Column Name</small>
+                </label>
+                <input
+                  required
+                  className="form-control"
+                  value={column.column_name}
+                  onChange={handleInputColumn("column_name", column)}
+                />
+              </div>
+            </div>
+            <div className="col-md-4">
+              <div className="form-group">
+                <label className="m-0">
+                  <small>Type</small>
+                </label>
+                <select
+                  required
+                  className="form-control"
+                  onChange={handleInputColumn("type", column)}
+                  value={column.type}
+                >
+                  {DATA_TYPES.map(type => (
+                    <option value={type} key={type}>
+                      {type}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="col-md-4">
+              <div className="form-group">
+                <label className="m-0">
+                  <small>Kind</small>
+                </label>
+                <select
+                  required
+                  className="form-control"
+                  onChange={handleInputColumn("kind", column)}
+                  value={column.kind}
+                >
+                  <option value="partition_key">Partition Key</option>
+                  <option value="regular">Regular</option>
+                </select>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     ))}
-    <br />
-    <button className="btn btn-success" onClick={addColumn}>
-      <i className="fa fa-plus-circle" /> New Column
-    </button>
+    <div className="text-right">
+      <button
+        className="btn btn-primary btn-sm"
+        type="button"
+        onClick={addColumn}
+      >
+        <i className="fa fa-plus" /> Add Column
+      </button>
+    </div>
   </div>
 );
 
@@ -127,6 +157,11 @@ class TableLists extends Component {
 
   addColumn = e => {
     e.preventDefault();
+    if (this.state.tableObject.columns.find(c => !c.column_name)) {
+      return handleError({
+        message: `There is one or more column with no name. Please check your input!`
+      });
+    }
 
     const newColumn = {
       _id: uuidV4(),
@@ -280,6 +315,7 @@ class TableLists extends Component {
           visible={this.state.newTableVisible}
           onClose={this.closeNewTable}
           onSubmit={this.handleSubmitNewTable}
+          // size="lg"
         >
           <FormTableModal
             tableObject={this.state.tableObject}
@@ -293,16 +329,18 @@ class TableLists extends Component {
           <div className="row">
             <div className="col-md-6">
               <div className="text-left float-left">
-                <a href="/dashboard">
-                  <i className="fa fa-arrow-left" /> All Keyspaces
-                </a>
+                <Link href="/keyspaces">
+                  <a>
+                    <i className="fa fa-arrow-left" /> All Keyspaces
+                  </a>
+                </Link>
               </div>
             </div>
           </div>
           <br />
 
           <h4 className="float-left mt-2">
-            <i className="fa fa-database" /> 
+            <i className="fa fa-database" />
             &nbsp; Tables under <i>
               `{this.props.router.query.keyspace_name}`
             </i>{" "}
@@ -322,6 +360,31 @@ class TableLists extends Component {
           <hr className="mt-2 mb-4" />
 
           <div className="row">
+            {this.props.loading ? (
+              <div className="col-md-12 text-center my-4">
+                <div className="text-secondary">
+                  <i className="fa fa-spinner fa-3x fa-spin m-3" />
+                  <br />
+                  Loading, please wait ...
+                </div>
+              </div>
+            ) : this.props.allTables.length === 0 ? (
+              <div className="col-md-12 text-center my-4">
+                <div className="text-secondary">
+                  <i className="fa fa-exclamation-circle fa-5x mb-3" />
+                  <br />
+                  No table at the moment!
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-success mt-4"
+                  style={{ minWidth: 240 }}
+                  onClick={this.openNewKeyspace}
+                >
+                  <i className="fa fa-plus-circle" /> Add New Table Now
+                </button>
+              </div>
+            ) : null}
             {this.props.allTables.map(table => (
               <div className="col-md-12 pl-6" key={table.table_name}>
                 <div
