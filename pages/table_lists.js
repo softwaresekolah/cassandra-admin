@@ -237,6 +237,33 @@ class TableLists extends Component {
     }
   };
 
+  handleDropTable = selectedTable => async e => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    try {
+      if (confirm(`Are you sure drop ${selectedTable.table_name} table ?`)) {
+        await this.props.dropTable({
+          variables: {
+            keyspace_name: this.props.router.query.keyspace_name,
+            table_name: selectedTable.table_name
+          }
+        });
+
+        addNotification({
+          message: "Drop table success",
+          level: "success"
+        });
+
+        await this.props.refetch();
+      }
+    } catch (err) {
+      handleError(err);
+    }
+  };
+
   render() {
     return (
       <AdminArea withoutFooter>
@@ -376,6 +403,7 @@ class TableLists extends Component {
                           <button
                             type="button"
                             className="btn btn-danger btn-sm"
+                            onClick={this.handleDropTable(table)}
                           >
                             DROP
                           </button>
@@ -433,30 +461,45 @@ const CREATE_TABLE = gql`
   }
 `;
 
+const DROP_TABLE = gql`
+  mutation dropTable($keyspace_name: String!, $table_name: String!) {
+    dropTable(keyspace_name: $keyspace_name, table_name: $table_name)
+  }
+`;
+
 export default withRouter(props => (
   <ApolloConsumer>
     {client => (
-      <Mutation mutation={CREATE_TABLE}>
-        {createTable => (
-          <Query
-            query={QUERY}
-            variables={{ keyspace_name: props.router.query.keyspace_name }}
-          >
-            {({ error, loading, data, refetch }) => (
-              <TableLists
-                {...props}
-                client={client}
-                loading={loading}
-                allTables={
-                  data && data.allTablesByKeyspace
-                    ? orderBy(data.allTablesByKeyspace, ["table_name"], ["asc"])
-                    : []
-                }
-                createTable={createTable}
-                refetch={refetch}
-              />
+      <Mutation mutation={DROP_TABLE}>
+        {dropTable => (
+          <Mutation mutation={CREATE_TABLE}>
+            {createTable => (
+              <Query
+                query={QUERY}
+                variables={{ keyspace_name: props.router.query.keyspace_name }}
+              >
+                {({ error, loading, data, refetch }) => (
+                  <TableLists
+                    {...props}
+                    client={client}
+                    loading={loading}
+                    allTables={
+                      data && data.allTablesByKeyspace
+                        ? orderBy(
+                            data.allTablesByKeyspace,
+                            ["table_name"],
+                            ["asc"]
+                          )
+                        : []
+                    }
+                    createTable={createTable}
+                    dropTable={dropTable}
+                    refetch={refetch}
+                  />
+                )}
+              </Query>
             )}
-          </Query>
+          </Mutation>
         )}
       </Mutation>
     )}
