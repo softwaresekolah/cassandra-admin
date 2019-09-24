@@ -301,7 +301,7 @@ class DashboardPage extends Component {
   render() {
     let info = this.props.info;
     return (
-      <AdminArea withoutFooter>
+      <AdminArea>
         <Head>
           <title>Dashboard | {appConfig.appName}</title>
         </Head>

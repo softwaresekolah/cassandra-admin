@@ -299,7 +299,7 @@ class Keyspaces extends Component {
 
   render() {
     return (
-      <AdminArea withoutFooter>
+      <AdminArea>
         <Head>
           <title>Dashboard | {appConfig.appName}</title>
         </Head>

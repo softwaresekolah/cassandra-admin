@@ -35,7 +35,7 @@ class TableRows extends Component {
 
   render() {
     return (
-      <AdminArea withoutFooter fluid>
+      <AdminArea fluid>
         <Head>
           <title>Dashboard | {appConfig.appName}</title>
         </Head>
