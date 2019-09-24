@@ -41,6 +41,12 @@ const headerMenu = [
     label: "Dashboard",
     icon: "home",
     isActive: isPathnameAndLinkMatch
+  },
+  {
+    link: "/keyspaces",
+    label: "Keyspaces",
+    icon: "database",
+    isActive: isPathnameAndLinkMatch
   }
   // {
   //   label: "Pengaturan",

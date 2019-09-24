@@ -14,6 +14,7 @@ exports.customTypes = [Keyspace];
 exports.rootTypes = `
   type Query {
     allKeyspaces: [Keyspace] 
+    info: String 
   }
 
   type Mutation {
