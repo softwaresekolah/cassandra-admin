@@ -1,4 +1,8 @@
 const Table = `
+  enum ColumnType {
+    text
+    int
+  }
   type Table {
     table_name: String
     Columns: [Column]
@@ -11,9 +15,9 @@ const Table = `
   }
 
   input ColumnPayload {
-    isPrimaryKey: Boolean
-    isStatic: Boolean
-    type: String
+    kind: String
+    #isStatic: Boolean
+    type: ColumnType
     column_name: String
   }
 `;
@@ -25,6 +29,8 @@ exports.rootTypes = `
   }
 
   type Mutation {
-    createTable(table_name: String!, column: [ColumnPayload]): String!
+    createTable(keyspace_name: String!, table_name: String!, column: [ColumnPayload]): String!
+    dropTable(keyspace_name: String!, table_name: String!): String!
+    alterAddColumn(keyspace_name: String!, table_name: String!, column: [ColumnPayload]): String!
   }
 `;
