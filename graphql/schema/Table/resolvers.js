@@ -11,7 +11,7 @@ const resolvers = {
 
   Mutation: {
     createTable: async (self, params, context) => {
-      // console.log(params.column)
+      console.log(params.column)
 
       let stringQuery = "";
       for (const c of params.column) {
