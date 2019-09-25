@@ -40,7 +40,9 @@ const FormTableModal = ({
   handleInput,
   tableObject,
   handleInputColumn,
-  addColumn
+  addColumn,
+  alterColumn,
+  handleAlterDropColumn
 }) => (
   <div>
     <div className="form-group">
@@ -49,53 +51,163 @@ const FormTableModal = ({
         className="form-control"
         value={tableObject.name}
         onChange={handleInput}
+        disabled={tableObject.editStatus === true}
       />
     </div>
-    {tableObject.columns.map(column => (
-      <div className="row" style={{ marginBottom: 10 }}>
-        <div className="col-md-4">
-          <div className="form-group">
-            <label>Column Name</label>
-            <input
-              className="form-control"
-              value={column.column_name}
-              onChange={handleInputColumn("column_name", column)}
-            />
+
+    {tableObject.editStatus === true ? (
+      <div>
+        {tableObject.columns.map(column => (
+          <div className="row">
+            <div className="col-md-4">
+              <div className="form-group">
+                <label className="small">Column Name</label>
+                <input
+                  className="form-control form-control-sm"
+                  value={column.column_name}
+                  onChange={handleInputColumn(column, "column_name")}
+                  disabled
+                />
+              </div>
+            </div>
+            <div className="col-md-4">
+              <div className="form-group">
+                <label className="small">Type</label>
+                <select
+                  className="form-control form-control-sm"
+                  onChange={handleInputColumn(column, "type")}
+                  value={column.type}
+                  disabled
+                >
+                  {DATA_TYPES.map(type => (
+                    <option value={type}>{type}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="col-md-4">
+              <div className="form-group">
+                <label className="small">
+                  Kind
+                  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                  &nbsp;&nbsp;&nbsp;&nbsp;
+                  <font color="red">
+                    <a onClick={handleAlterDropColumn(column)}>
+                      <i className="fa fa-times-circle" />
+                    </a>
+                  </font>
+                </label>
+                <select
+                  className="form-control form-control-sm"
+                  onChange={handleInputColumn(column, "kind")}
+                  value={column.kind}
+                  disabled
+                >
+                  <option value="partition_key">Partition Key</option>
+                  <option value="regular">Regular</option>
+                </select>
+              </div>
+            </div>
           </div>
-        </div>
-        <div className="col-md-4">
-          <div className="form-group">
-            <label>Type</label>
-            <select
-              className="form-control"
-              onChange={handleInputColumn("type", column)}
-              value={column.type}
-            >
-              {DATA_TYPES.map(type => (
-                <option value={type}>{type}</option>
-              ))}
-            </select>
+        ))}
+        <hr style={{ margin: 0 }} />
+        <br />
+
+        {alterColumn.map(column => (
+          <div className="row">
+            <div className="col-md-4">
+              <div className="form-group">
+                <label className="small">Column Name</label>
+                <input
+                  className="form-control form-control-sm"
+                  value={column.column_name}
+                  onChange={handleInputColumn(column, "column_name")}
+                />
+              </div>
+            </div>
+            <div className="col-md-4">
+              <div className="form-group">
+                <label className="small">Type</label>
+                <select
+                  className="form-control form-control-sm"
+                  onChange={handleInputColumn(column, "type")}
+                  value={column.type}
+                >
+                  {DATA_TYPES.map(type => (
+                    <option value={type}>{type}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="col-md-4">
+              <div className="form-group">
+                <label className="small">Kind</label>
+                <select
+                  className="form-control form-control-sm"
+                  onChange={handleInputColumn(column, "kind")}
+                  value={column.kind}
+                >
+                  <option value="partition_key">Partition Key</option>
+                  <option value="regular">Regular</option>
+                </select>
+              </div>
+            </div>
           </div>
-        </div>
-        <div className="col-md-4">
-          <div className="form-group">
-            <label>Kind</label>
-            <select
-              className="form-control"
-              onChange={handleInputColumn("kind", column)}
-              value={column.kind}
-            >
-              <option value="partition_key">Partition Key</option>
-              <option value="regular">Regular</option>
-            </select>
-          </div>
-        </div>
+        ))}
+        <button className="btn btn-success" onClick={addColumn}>
+          <i className="fa fa-plus-circle" /> New Column
+        </button>
       </div>
-    ))}
-    <br />
-    <button className="btn btn-success" onClick={addColumn}>
-      <i className="fa fa-plus-circle" /> New Column
-    </button>
+    ) : (
+      <div>
+        {tableObject.columns.map(column => (
+          <div className="row">
+            <div className="col-md-4">
+              <div className="form-group">
+                <label className="small">Column Name</label>
+                <input
+                  className="form-control form-control-sm"
+                  value={column.column_name}
+                  onChange={handleInputColumn(column, "column_name")}
+                />
+              </div>
+            </div>
+            <div className="col-md-4">
+              <div className="form-group">
+                <label className="small">Type</label>
+                <select
+                  className="form-control form-control-sm"
+                  onChange={handleInputColumn(column, "type")}
+                  value={column.type}
+                >
+                  {DATA_TYPES.map(type => (
+                    <option value={type}>{type}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="col-md-4">
+              <div className="form-group">
+                <label className="small">Kind</label>
+                <select
+                  className="form-control form-control-sm"
+                  onChange={handleInputColumn(column, "kind")}
+                  value={column.kind}
+                >
+                  <option value="partition_key">Partition Key</option>
+                  <option value="regular">Regular</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        ))}
+        <br />
+        <button className="btn btn-success" onClick={addColumn}>
+          <i className="fa fa-plus-circle" /> New Column
+        </button>
+      </div>
+    )}
   </div>
 );
 
@@ -106,10 +218,12 @@ class TableLists extends Component {
       name: "",
       columns: []
     },
-    newTableVisible: false
+    newTableVisible: false,
+    alterTableVisible: false,
+    alterColumn: []
   };
 
-  openNewKeyspace = () => {
+  openNewTable = () => {
     this.setState({
       newTableVisible: true,
       tableObject: {
@@ -128,19 +242,33 @@ class TableLists extends Component {
   addColumn = e => {
     e.preventDefault();
 
-    const newColumn = {
-      _id: uuidV4(),
-      kind: "regular",
-      type: "text",
-      column_name: ""
-    };
-    this.setState({
-      tableObject: {
-        ...this.setState.tableObject,
-        name: this.state.tableObject.name,
-        columns: [...this.state.tableObject.columns, newColumn]
-      }
-    });
+    if (
+      !this.state.tableObject.editStatus ||
+      this.state.tableObject.editStatus === false
+    ) {
+      const newColumn = {
+        _id: uuidV4(),
+        kind: "regular",
+        type: "text",
+        column_name: ""
+      };
+      this.setState({
+        tableObject: {
+          ...this.state.tableObject,
+          columns: [...this.state.tableObject.columns, newColumn]
+        }
+      });
+    } else {
+      const newColumn = {
+        _id: uuidV4(),
+        kind: "regular",
+        type: "text",
+        column_name: ""
+      };
+      this.setState({
+        alterColumn: [...this.state.alterColumn, newColumn]
+      });
+    }
   };
 
   handleInput = e => {
@@ -152,7 +280,7 @@ class TableLists extends Component {
     });
   };
 
-  handleInputColumn = (key, column) => e => {
+  handleInputColumn = (column, key) => e => {
     this.setState({
       tableObject: {
         ...this.state.tableObject,
@@ -166,17 +294,64 @@ class TableLists extends Component {
               }
         )
       }
-      // tableObject: {
-      //   ...this.state.tableObject,
-      //   columns: this.state.tableObject.columns.map(col =>
-      //     col._id !== column._id
-      //       ? col
-      //       : {
-      //           ...column,
-      //           [key]: e.target.value
-      //         }
-      //   )
-      // }
+    });
+  };
+
+  openAlterTable = selectedTable => e => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    let sortedColumns = selectedTable.Columns;
+    sortedColumns.forEach((item, i) => {
+      if (item.kind === "partition_key") {
+        selectedTable.Columns.splice(i, 1);
+        selectedTable.Columns.unshift(item);
+      }
+    });
+
+    this.setState({
+      tableObject: {
+        name: selectedTable.table_name,
+        columns: sortedColumns.map(col => {
+          return {
+            _id: uuidV4(),
+            ...col
+          };
+        }),
+        editStatus: true
+      },
+      alterTableVisible: true
+    });
+  };
+
+  closeAlterTable = () => {
+    this.setState({
+      alterTableVisible: false
+    });
+  };
+
+  handleAlterInput = e => {
+    this.setState({
+      tableObject: {
+        ...this.state.tableObject,
+        name: e.target.value
+      }
+    });
+  };
+
+  handleAlterInputColumn = (column, key) => e => {
+    this.setState({
+      alterColumn: this.state.alterColumn.map(col =>
+        col._id !== column._id
+          ? col
+          : {
+              ...column,
+              // grades: this.state.grades,
+              [key]: e.target.value
+            }
+      )
     });
   };
 
@@ -237,6 +412,91 @@ class TableLists extends Component {
     }
   };
 
+  handleAlterAddColumn = async e => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    try {
+      const selectedTable = this.props.allTables.find(
+        t => t.table_name === this.state.tableObject.name
+      );
+
+      for (const c of this.state.alterColumn) {
+        if (c.column_name === "") {
+          throw {
+            message: "Error, Column does not have a name"
+          };
+        }
+      }
+
+      if (this.state.alterColumn.length > 0) {
+        await this.props.alterAddColumn({
+          variables: {
+            keyspace_name: this.props.router.query.keyspace_name,
+            table_name: this.state.tableObject.name,
+            column: this.state.alterColumn.map(col => {
+              const { _id, ...d } = col;
+              return d;
+            })
+          }
+        });
+
+        addNotification({
+          message: "Alter add column success",
+          level: "success"
+        });
+        await this.props.refetch();
+      }
+
+      this.setState({
+        alterColumn: []
+      });
+      this.closeAlterTable();
+    } catch (err) {
+      handleError(err);
+    }
+  };
+
+  handleAlterDropColumn = selectColumn => async e => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    try {
+      let res = [];
+
+      if (confirm(`Are you sure to drop ${selectColumn.column_name} ?`)) {
+        const res = this.state.tableObject.columns.filter(
+          c => c.column_name !== selectColumn.column_name
+        );
+        await this.props.alterDropColumn({
+          variables: {
+            keyspace_name: this.props.router.query.keyspace_name,
+            table_name: this.state.tableObject.name,
+            column_name: selectColumn.column_name
+          }
+        });
+
+        addNotification({
+          message: "Drop column success",
+          level: "success"
+        });
+
+        await this.props.refetch();
+        this.setState({
+          tableObject: {
+            ...this.state.tableObject,
+            columns: res
+          }
+        });
+      }
+    } catch (err) {
+      handleError(err);
+    }
+  };
+
   handleDropTable = selectedTable => async e => {
     if (e) {
       e.preventDefault();
@@ -286,6 +546,28 @@ class TableLists extends Component {
             handleInput={this.handleInput}
             handleInputColumn={this.handleInputColumn}
             addColumn={this.addColumn}
+            alterColumn={this.state.alterColumn}
+            handleAlterDropColumn={this.handleAlterDropColumn}
+          />
+        </FormModal>
+
+        <FormModal
+          title={
+            <span>
+              <i className="fa fa-plus-circle" /> Alter Table
+            </span>
+          }
+          visible={this.state.alterTableVisible}
+          onClose={this.closeAlterTable}
+          onSubmit={this.handleAlterAddColumn}
+        >
+          <FormTableModal
+            tableObject={this.state.tableObject}
+            handleInput={this.handleAlterInput}
+            handleInputColumn={this.handleAlterInputColumn}
+            addColumn={this.addColumn}
+            alterColumn={this.state.alterColumn}
+            handleAlterDropColumn={this.handleAlterDropColumn}
           />
         </FormModal>
 
@@ -302,7 +584,7 @@ class TableLists extends Component {
           <br />
 
           <h4 className="float-left mt-2">
-            <i className="fa fa-database" /> 
+            <i className="fa fa-database" />
             &nbsp; Tables under <i>
               `{this.props.router.query.keyspace_name}`
             </i>{" "}
@@ -312,7 +594,7 @@ class TableLists extends Component {
             <div className="float-right hoverable on-hover-shadow">
               <button
                 className="btn btn-success btn-sm btn-block px-4 py-2"
-                onClick={this.openNewKeyspace}
+                onClick={this.openNewTable}
               >
                 <i className="fa fa-plus-circle" /> Add New Table
               </button>
@@ -396,6 +678,7 @@ class TableLists extends Component {
                           <button
                             type="button"
                             className="btn btn-primary btn-sm"
+                            onClick={this.openAlterTable(table)}
                           >
                             ALTER
                           </button>
@@ -461,6 +744,33 @@ const CREATE_TABLE = gql`
   }
 `;
 
+const ALTER_ADD_COLUMN = gql`
+  mutation alterAddColumn(
+    $keyspace_name: String!
+    $table_name: String!
+    $column: [ColumnPayload]
+  ) {
+    alterAddColumn(
+      keyspace_name: $keyspace_name
+      table_name: $table_name
+      column: $column
+    )
+  }
+`;
+
+const ALTER_DROP_COLUMN = gql`
+  mutation alterDropColumn(
+    $keyspace_name: String!
+    $table_name: String!
+    $column_name: String!
+  ) {
+    alterDropColumn(
+      keyspace_name: $keyspace_name
+      table_name: $table_name
+      column_name: $column_name
+    )
+  }
+`;
 const DROP_TABLE = gql`
   mutation dropTable($keyspace_name: String!, $table_name: String!) {
     dropTable(keyspace_name: $keyspace_name, table_name: $table_name)
@@ -470,34 +780,46 @@ const DROP_TABLE = gql`
 export default withRouter(props => (
   <ApolloConsumer>
     {client => (
-      <Mutation mutation={DROP_TABLE}>
-        {dropTable => (
-          <Mutation mutation={CREATE_TABLE}>
-            {createTable => (
-              <Query
-                query={QUERY}
-                variables={{ keyspace_name: props.router.query.keyspace_name }}
-              >
-                {({ error, loading, data, refetch }) => (
-                  <TableLists
-                    {...props}
-                    client={client}
-                    loading={loading}
-                    allTables={
-                      data && data.allTablesByKeyspace
-                        ? orderBy(
-                            data.allTablesByKeyspace,
-                            ["table_name"],
-                            ["asc"]
-                          )
-                        : []
-                    }
-                    createTable={createTable}
-                    dropTable={dropTable}
-                    refetch={refetch}
-                  />
+      <Mutation mutation={ALTER_DROP_COLUMN}>
+        {alterDropColumn => (
+          <Mutation mutation={ALTER_ADD_COLUMN}>
+            {alterAddColumn => (
+              <Mutation mutation={DROP_TABLE}>
+                {dropTable => (
+                  <Mutation mutation={CREATE_TABLE}>
+                    {createTable => (
+                      <Query
+                        query={QUERY}
+                        variables={{
+                          keyspace_name: props.router.query.keyspace_name
+                        }}
+                      >
+                        {({ error, loading, data, refetch }) => (
+                          <TableLists
+                            {...props}
+                            client={client}
+                            loading={loading}
+                            allTables={
+                              data && data.allTablesByKeyspace
+                                ? orderBy(
+                                    data.allTablesByKeyspace,
+                                    ["table_name"],
+                                    ["asc"]
+                                  )
+                                : []
+                            }
+                            createTable={createTable}
+                            dropTable={dropTable}
+                            alterAddColumn={alterAddColumn}
+                            alterDropColumn={alterDropColumn}
+                            refetch={refetch}
+                          />
+                        )}
+                      </Query>
+                    )}
+                  </Mutation>
                 )}
-              </Query>
+              </Mutation>
             )}
           </Mutation>
         )}

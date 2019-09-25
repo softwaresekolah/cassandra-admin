@@ -11,8 +11,6 @@ const resolvers = {
 
   Mutation: {
     createTable: async (self, params, context) => {
-      console.log(params.column)
-
       let stringQuery = "";
       for (const c of params.column) {
         stringQuery += `${c.column_name} ${c.type} ${
@@ -21,7 +19,6 @@ const resolvers = {
       }
 
       stringQuery = stringQuery.split(" ,").join("");
-      // console.log(stringQuery);
 
       try {
         // await context.cassandra.execute(`USE ${params.keyspace_name}`);
@@ -32,7 +29,7 @@ const resolvers = {
           // { keyspace: params.keyspace_name }
         );
       } catch (err) {
-        throw new Error("Error, Keyspace not found: ", err);
+        console.log(err);
         return err;
       }
       return "ok";
@@ -43,14 +40,31 @@ const resolvers = {
       for (const c of params.column) {
         stringQuery += `${c.column_name} ${c.type} ${
           c.kind === "partition_key" ? "PRIMARY KEY" : ""
-        }, `;
+        },`;
       }
 
-      stringQuery = stringQuery.split(" ,").join("");
+      stringQuery = stringQuery.split(" ,").join(", ");
+
+      let q = stringQuery.substring(0, stringQuery.length - 2);
 
       try {
         await context.cassandra.execute(
-          `ALTER TABLE ${params.keyspace_name}.${params.table_name} ADD (${stringQuery})`
+          `ALTER TABLE ${params.keyspace_name}.${params.table_name} ADD (${q})`
+        );
+      } catch (err) {
+        console.log(err);
+        return err;
+      }
+
+      return "ok";
+    },
+
+    alterDropColumn: async (self, params, context) => {
+      // console.log(stringQuery)
+
+      try {
+        await context.cassandra.execute(
+          `ALTER TABLE ${params.keyspace_name}.${params.table_name} DROP ${params.column_name}`
         );
       } catch (err) {
         console.log(err);
