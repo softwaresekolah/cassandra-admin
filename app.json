@@ -1,6 +1,6 @@
 {
-  "appName": "Cassandra Admin",
-  "appVersion": "1.1.0",
+  "appName": "Cassandra Administration Tool",
+  "appVersion": "0.1.0",
   "appFavicon": "/static/images/logo-small.png",
   "appIcon": "/static/images/logo-small.png",
   "appWelcomeLogo": "/static/images/logo-small.png"

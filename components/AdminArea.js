@@ -34,9 +34,7 @@ export default AdminArea;
 
 export const protectAdminArea = ProtectedComponent => {
   return class WithProtectedAdminArea extends Component {
-    static displayName = `WithProtectedAdminArea(${
-      ProtectedComponent.displayName
-    })`;
+    static displayName = `WithProtectedAdminArea(${ProtectedComponent.displayName})`;
 
     static async getInitialProps(context) {
       const { loggedInUser } = await checkLoggedIn(context.apolloClient);
@@ -70,9 +68,7 @@ export const protectAdminArea = ProtectedComponent => {
 
 export const protectAdminAreaForRoles = roleIds => ProtectedComponent => {
   return class WithProtectedAdminArea extends Component {
-    static displayName = `WithProtectedAdminArea(${
-      ProtectedComponent.displayName
-    })`;
+    static displayName = `WithProtectedAdminArea(${ProtectedComponent.displayName})`;
 
     static async getInitialProps(context) {
       const res = await checkLoggedIn(context.apolloClient);

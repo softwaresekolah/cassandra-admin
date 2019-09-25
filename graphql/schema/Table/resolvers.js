@@ -19,17 +19,13 @@ const resolvers = {
       }
 
       stringQuery = stringQuery.split(" ,").join("");
-
       try {
-        // await context.cassandra.execute(`USE ${params.keyspace_name}`);
-
         await context.cassandra.execute(
           `CREATE TABLE IF NOT EXISTS ${params.keyspace_name}.${params.table_name}(${stringQuery})`
           // [],
           // { keyspace: params.keyspace_name }
         );
       } catch (err) {
-        console.log(err);
         return err;
       }
       return "ok";
@@ -67,7 +63,6 @@ const resolvers = {
           `ALTER TABLE ${params.keyspace_name}.${params.table_name} DROP ${params.column_name}`
         );
       } catch (err) {
-        console.log(err);
         return err;
       }
 
@@ -83,7 +78,6 @@ const resolvers = {
         );
       } catch (err) {
         throw new Error("Error, Keyspace not found: ", err);
-        return err;
       }
       return "ok";
     }

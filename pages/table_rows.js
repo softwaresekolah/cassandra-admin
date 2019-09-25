@@ -35,7 +35,7 @@ class TableRows extends Component {
 
   render() {
     return (
-      <AdminArea withoutFooter fluid>
+      <AdminArea fluid>
         <Head>
           <title>Dashboard | {appConfig.appName}</title>
         </Head>
@@ -43,15 +43,17 @@ class TableRows extends Component {
           <div className="row">
             <div className="col-md-12">
               <div className="text-left float-left">
-                <a
+                <Link
                   href={
                     "/table_lists?keyspace_name=" +
                     this.props.router.query.keyspace_name
                   }
                 >
-                  <i className="fa fa-arrow-left" /> All tables under `
-                  {this.props.router.query.keyspace_name}` keyspace
-                </a>
+                  <a>
+                    <i className="fa fa-arrow-left" /> All tables under `
+                    {this.props.router.query.keyspace_name}` keyspace
+                  </a>
+                </Link>
               </div>
             </div>
           </div>
@@ -71,7 +73,7 @@ class TableRows extends Component {
 
           <div className="row">
             <div className="col-md-12">
-              <div className="card">
+              <div className="card hoverable on-hover-shadow">
                 <div className="card-status bg-success card-status-left" />
                 <div className="card-body">
                   {this.props.error ? (
@@ -83,7 +85,8 @@ class TableRows extends Component {
                     <DataTable
                       title={
                         <div>
-                          <i className="fa fa-info-circle" /> All Rows
+                          <i className="fa fa-info-circle" />{" "}
+                          {this.props.loading ? "Loading rows..." : "All rows"}
                         </div>
                       }
                       withoutCard

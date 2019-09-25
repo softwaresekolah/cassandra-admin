@@ -301,7 +301,7 @@ class DashboardPage extends Component {
   render() {
     let info = this.props.info;
     return (
-      <AdminArea withoutFooter>
+      <AdminArea>
         <Head>
           <title>Dashboard | {appConfig.appName}</title>
         </Head>
@@ -310,23 +310,44 @@ class DashboardPage extends Component {
           <div className="row">
             <div className="col-md-12">
               <div className="card shadow-sm">
+                <div className="card-body text-center">
+                  <img
+                    className="img img-fluid mb-3"
+                    src="/static/images/logo-small.png"
+                    style={{ maxWidth: 100 }}
+                  />
+                  <h4>
+                    <i className="fa fa-tools" /> {appConfig.appName}
+                  </h4>
+                </div>
+                <div className="card-footer text-right">
+                  <small>
+                    <i className="fa fa-info-circle" /> App Version{" "}
+                    {appConfig.appVersion}
+                  </small>
+                </div>
+              </div>
+
+              <div className="card shadow-sm">
                 <div className="card-body">
-                  <h3 className="fa-pull-left">
-                    <i className="fa fa-info-circle" /> Node Info
-              </h3>
+                  <h4 className="fa-pull-left">
+                    <i className="fa fa-info-circle" /> Node Information
+                  </h4>
                   <div className="clearfix" />
                   <hr className="mt-2" />
                   <div className="row">
-                    {
-                      Object.keys(info).map(key =>
-                        <div className="col-md-6">
-                          {console.log(info)}
-                          <div key={key} className="form-group">
-                            <label>{key}</label>
-                            <input type="text" className="form-control" defaultValue={info[key]} />
-                          </div>
-                        </div>)
-                    }
+                    {Object.keys(info).map(key => (
+                      <div className="col-md-6" key={key}>
+                        <div key={key} className="form-group">
+                          <label>{key}</label>
+                          <input
+                            type="text"
+                            className="form-control"
+                            defaultValue={info[key]}
+                          />
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -406,10 +427,10 @@ export default props => (
                         allKeyspaces={
                           data && data.allKeyspaces
                             ? orderBy(
-                              data.allKeyspaces,
-                              ["keyspace_name"],
-                              ["asc"]
-                            )
+                                data.allKeyspaces,
+                                ["keyspace_name"],
+                                ["asc"]
+                              )
                             : []
                         }
                         info={data && data.info ? JSON.parse(data.info) : ""}

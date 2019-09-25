@@ -46,7 +46,9 @@ const FormTableModal = ({
 }) => (
   <div>
     <div className="form-group">
-      <label>Table Name</label>
+      <label>
+        <b>Table Name *</b>
+      </label>
       <input
         className="form-control"
         value={tableObject.name}
@@ -241,6 +243,11 @@ class TableLists extends Component {
 
   addColumn = e => {
     e.preventDefault();
+    if (this.state.tableObject.columns.find(c => !c.column_name)) {
+      return handleError({
+        message: `There is one or more column with no name. Please check your input!`
+      });
+    }
 
     if (
       !this.state.tableObject.editStatus ||
@@ -526,7 +533,7 @@ class TableLists extends Component {
 
   render() {
     return (
-      <AdminArea withoutFooter>
+      <AdminArea>
         <Head>
           <title>Dashboard | {appConfig.appName}</title>
         </Head>
@@ -540,6 +547,7 @@ class TableLists extends Component {
           visible={this.state.newTableVisible}
           onClose={this.closeNewTable}
           onSubmit={this.handleSubmitNewTable}
+          // size="lg"
         >
           <FormTableModal
             tableObject={this.state.tableObject}
@@ -575,9 +583,11 @@ class TableLists extends Component {
           <div className="row">
             <div className="col-md-6">
               <div className="text-left float-left">
-                <a href="/dashboard">
-                  <i className="fa fa-arrow-left" /> All Keyspaces
-                </a>
+                <Link href="/keyspaces">
+                  <a>
+                    <i className="fa fa-arrow-left" /> All Keyspaces
+                  </a>
+                </Link>
               </div>
             </div>
           </div>
@@ -604,6 +614,31 @@ class TableLists extends Component {
           <hr className="mt-2 mb-4" />
 
           <div className="row">
+            {this.props.loading ? (
+              <div className="col-md-12 text-center my-4">
+                <div className="text-secondary">
+                  <i className="fa fa-spinner fa-3x fa-spin m-3" />
+                  <br />
+                  Loading, please wait ...
+                </div>
+              </div>
+            ) : this.props.allTables.length === 0 ? (
+              <div className="col-md-12 text-center my-4">
+                <div className="text-secondary">
+                  <i className="fa fa-exclamation-circle fa-5x mb-3" />
+                  <br />
+                  No table at the moment!
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-success mt-4"
+                  style={{ minWidth: 240 }}
+                  onClick={this.openNewKeyspace}
+                >
+                  <i className="fa fa-plus-circle" /> Add New Table Now
+                </button>
+              </div>
+            ) : null}
             {this.props.allTables.map(table => (
               <div className="col-md-12 pl-6" key={table.table_name}>
                 <div

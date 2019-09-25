@@ -299,7 +299,7 @@ class Keyspaces extends Component {
 
   render() {
     return (
-      <AdminArea withoutFooter>
+      <AdminArea>
         <Head>
           <title>Dashboard | {appConfig.appName}</title>
         </Head>
@@ -340,7 +340,7 @@ class Keyspaces extends Component {
           <div className="row">
             <div className="col-md-12">
               <h3 className="fa-pull-left">
-                <i className="fa fa-info-circle" /> All Keyspaces
+                <i className="fa fa-inbox" /> All Keyspaces
               </h3>
               <div className="fa-pull-right hoverable on-hover-shadow">
                 <button
