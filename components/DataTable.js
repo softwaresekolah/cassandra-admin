@@ -4,10 +4,10 @@ import checkboxHOC from "react-table/lib/hoc/selectTable";
 const CheckboxTable = checkboxHOC(ReactTable);
 import { get } from "lodash";
 
-const filterCaseInsensitive = (filter, row, column) => {
+const filterCaseInsensitive = (filter, row) => {
   const id = filter.pivotId || filter.id;
 
-  let rowValue = ("" + get(row, id)).toLowerCase();
+  const rowValue = ("" + get(row, id)).toLowerCase();
   const filterValue = ("" + filter.value).toLowerCase();
   if (rowValue.indexOf(filterValue) >= 0) {
     return true;

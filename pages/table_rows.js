@@ -14,39 +14,76 @@ import DataTable from "../components/DataTable";
 import localforage from "localforage";
 
 let projectionFromLocalForage = [];
+
 const ProjectionColumnsModal = ({
   columns,
   handleToggleColumn,
   toggledColumns
 }) =>
   columns.map(col => (
-    <section
-      className="card hoverable on-hover-shadow my-1"
-      onClick={handleToggleColumn(col)}
-      style={{
-        color: toggledColumns.includes(col) ? "#000" : "#ccc"
-      }}
-      key={col}
-    >
-      <div className="card-block py-2 px-4">
-        <b>
-          {" "}
-          {toggledColumns.includes(col) ? null : (
-            <i className="fa fa-eye-slash" />
-          )}{" "}
-          {col}
-        </b>
+    <div>
+      <section
+        className="card hoverable on-hover-shadow my-1"
+        onClick={handleToggleColumn(col)}
+        style={{
+          color:
+            toggledColumns.findIndex(c => c.column_name === col.column_name) >
+            -1
+              ? "#000"
+              : "#ccc"
+        }}
+        key={col.column_name}
+      >
+        <div className="card-block py-2 px-4">
+          <b>
+            {" "}
+            {toggledColumns.findIndex(c => c.column_name === col.column_name) >
+            -1 ? null : (
+              <i className="fa fa-eye-slash" />
+            )}{" "}
+            <div className="row">
+              <div className="col-md-4">{col.column_name}</div>
+              <div className="col-md-4">({col.type})</div>
+              <div className="col-md-4">
+                {col.kind === "partition_key" ? `("PRIMARY KEY")` : null}
+              </div>
+            </div>
+          </b>
+        </div>
+      </section>
+    </div>
+  ));
+
+const RowDataModal = ({ columns, handleInput, data }) =>
+  columns.map(col => (
+    <div className="form-group" key={col.column_name}>
+      <div className="row">
+        <div className="col-md-4">{col.column_name}</div>
+        <div className="col-md-4">{col.type}</div>
+        <div className="col-md-4">
+          {col.kind === "partition_key" ? `("PRIMARY KEY")` : null}
+        </div>
       </div>
-    </section>
+
+      <input
+        className="form-control"
+        onChange={handleInput(col.column_name)}
+        value={data[col.column_name]}
+      />
+    </div>
   ));
 
 class TableRows extends Component {
   state = {
     columns: [],
-    showProjectionVisible: false,
     projectionColumn: [],
+    toggledColumns: [],
+    newRow: {},
+    editRow: {},
 
-    toggledColumns: []
+    showProjectionVisible: false,
+    newRowDataVisible: false,
+    editRowDataVisible: false
   };
 
   static getDerivedStateFromProps = (props, state) => {
@@ -65,18 +102,30 @@ class TableRows extends Component {
     }
   };
 
+  sortColumnsByPartitionKey = columns => {
+    let sortedColumns = columns;
+    sortedColumns.forEach((item, i) => {
+      if (item.kind === "partition_key") {
+        columns.splice(i, 1);
+        columns.unshift(item);
+      }
+    });
+
+    return sortedColumns;
+  };
+
   componentDidMount = async () => {
     projectionFromLocalForage = await localforage.getItem(
       `${this.props.router.query.keyspace_name}.${this.props.router.query.table_name}`
     );
 
-    console.log(projectionFromLocalForage)
-
     Router.replace({
       pathname: "/table_rows",
       query: {
         ...this.props.router.query,
-        projectionFromLocalForage
+        projectionFromLocalForage: projectionFromLocalForage
+          ? projectionFromLocalForage.map(c => c.column_name)
+          : []
       }
     });
   };
@@ -104,13 +153,26 @@ class TableRows extends Component {
   };
 
   handleToggleColumn = column => e => {
-    if (this.state.toggledColumns.includes(column)) {
+    let toggledColumns = this.state.toggledColumns;
+    const colIndex = toggledColumns.findIndex(
+      col => col.column_name === column.column_name
+    );
+
+    if (colIndex > -1) {
       this.setState({
-        toggledColumns: this.state.toggledColumns.filter(c => c !== column)
+        toggledColumns: this.state.toggledColumns.filter(
+          c => c.column_name !== column.column_name
+        )
       });
     } else {
+      const indexFromAllColumns = this.props.allColumns.findIndex(
+        col => col.column_name === column.column_name
+      );
+
+      toggledColumns.splice(indexFromAllColumns, 0, column);
+
       this.setState({
-        toggledColumns: [...this.state.toggledColumns, column]
+        toggledColumns
       });
     }
   };
@@ -138,8 +200,169 @@ class TableRows extends Component {
     }, 1000);
   };
 
+  openNewRow = () => {
+    let columns = [];
+    let initData = {};
+    for (const col of this.props.allColumns) {
+      initData[col.column_name] = "";
+    }
+
+    this.setState({
+      newRowDataVisible: true,
+      newRow: {
+        ...initData
+      }
+    });
+  };
+
+  closeNewRow = () => {
+    this.setState({
+      newRowDataVisible: false
+    });
+  };
+
+  handleInputNewRow = key => e => {
+    this.setState({
+      newRow: {
+        ...this.state.newRow,
+        [key]: e.target.value
+      }
+    });
+  };
+
+  handleSubmitNewRow = async e => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    try {
+      await this.props.createRow({
+        variables: {
+          keyspace_name: this.props.router.query.keyspace_name,
+          table_name: this.props.router.query.table_name,
+          row_data: JSON.stringify(this.state.newRow)
+        }
+      });
+
+      addNotification({
+        message: "New row added success",
+        level: "success"
+      });
+      await this.props.refetch();
+      this.closeNewRow();
+    } catch (err) {
+      handleError(err);
+    }
+  };
+
+  openEditRow = selectedRow => {
+    this.setState({
+      editRowDataVisible: true,
+      editRow: {
+        ...selectedRow.row
+      }
+    });
+  };
+
+  closeEditRow = () => {
+    this.setState({
+      editRowDataVisible: false
+    });
+  };
+
+  handleInputEditRow = key => e => {
+    this.setState({
+      editRow: {
+        ...this.state.editRow,
+        [key]: e.target.value
+      }
+    });
+  };
+
+  handleSubmitUpdateRow = async e => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    try {
+      let rowData = [];
+      for (const c of this.props.allColumns) {
+        rowData.push({
+          column_name: c.column_name,
+          kind: c.kind,
+          value: this.state.editRow[c.column_name]
+        });
+      }
+
+      
+
+      await this.props.updateRow({
+        variables: {
+          keyspace_name: this.props.router.query.keyspace_name,
+          table_name: this.props.router.query.table_name,
+          row_data: JSON.stringify(rowData)
+        }
+      });
+
+      addNotification({
+        message: "Update row success",
+        level: "success"
+      });
+      await this.props.refetch();
+
+      this.closeEditRow();
+    } catch (err) {
+      handleError(err);
+    }
+  };
+
+  submitDelete = ({ rows, keys }) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    try {
+    } catch (err) {
+      handleError(err);
+    }
+  };
+
+  submitTruncate = async e => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    if (
+      confirm(
+        `Are you sure to Truncate this ${this.props.router.query.table_name} table ? `
+      )
+    ) {
+      try {
+        await this.props.truncateTable({
+          variables: {
+            keyspace_name: this.props.router.query.keyspace_name,
+            table_name: this.props.router.query.table_name
+          }
+        });
+
+        addNotification({
+          message: "Truncate table success",
+          level: "success"
+        });
+
+        await this.props.refetch();
+      } catch (err) {
+        handleError(err);
+      }
+    }
+  };
+
   render() {
-    const allColumns = this.props.allColumns;
+    const sortedColumns = this.sortColumnsByPartitionKey(this.props.allColumns);
     return (
       <AdminArea fluid>
         <Head>
@@ -162,6 +385,42 @@ class TableRows extends Component {
             columns={this.state.projectionColumn}
             handleToggleColumn={this.handleToggleColumn}
             toggledColumns={this.state.toggledColumns}
+          />
+        </FormModal>
+
+        <FormModal
+          title={
+            <span>
+              <i className="fa fa-plus-circle" /> Create Row
+            </span>
+          }
+          visible={this.state.newRowDataVisible}
+          onClose={this.closeNewRow}
+          onSubmit={this.handleSubmitNewRow}
+          // size="lg"
+        >
+          <RowDataModal
+            columns={sortedColumns}
+            handleInput={this.handleInputNewRow}
+            data={this.state.newRow}
+          />
+        </FormModal>
+
+        <FormModal
+          title={
+            <span>
+              <i className="fa fa-edit" /> Update Row
+            </span>
+          }
+          visible={this.state.editRowDataVisible}
+          onClose={this.closeEditRow}
+          onSubmit={this.handleSubmitUpdateRow}
+          // size="lg"
+        >
+          <RowDataModal
+            columns={sortedColumns}
+            handleInput={this.handleInputEditRow}
+            data={this.state.editRow}
           />
         </FormModal>
         <div className="container">
@@ -198,10 +457,16 @@ class TableRows extends Component {
 
           <div className="text-right float-right">
             <button
-              className="btn btn-sm btn-success"
-              onClick={this.openProjectionModal(allColumns)}
+              className="btn btn-sm btn-danger mr-2"
+              onClick={this.submitTruncate}
             >
-              Projection
+              <i className="fa fa-trash-alt" /> Truncate
+            </button>
+            <button
+              className="btn btn-sm btn-success"
+              onClick={this.openProjectionModal(sortedColumns)}
+            >
+              <i className="fa fa-filter" /> Projection
             </button>
           </div>
 
@@ -227,6 +492,9 @@ class TableRows extends Component {
                       columns={this.state.columns}
                       loading={this.props.loading}
                       data={this.props.allRows}
+                      onAddData={this.openNewRow}
+                      onEditData={this.openEditRow}
+                      onDeleteData={this.submitDelete}
                     />
                   )}
                 </div>
@@ -257,44 +525,116 @@ const QUERY = gql`
   }
 `;
 
+const CREATE_ROW = gql`
+  mutation createRow(
+    $keyspace_name: String!
+    $table_name: String!
+    $row_data: String!
+  ) {
+    createRow(
+      keyspace_name: $keyspace_name
+      table_name: $table_name
+      row_data: $row_data
+    )
+  }
+`;
+
+const UPDATE_ROW = gql`
+  mutation updateRow(
+    $keyspace_name: String!
+    $table_name: String!
+    $row_data: String!
+  ) {
+    updateRow(
+      keyspace_name: $keyspace_name
+      table_name: $table_name
+      row_data: $row_data
+    )
+  }
+`;
+
+const DELETE_ROW = gql`
+  mutation deleteRow(
+    $keyspace_name: String!
+    $table_name: String!
+    $row_data: String!
+  ) {
+    deleteRow(
+      keyspace_name: $keyspace_name
+      table_name: $table_name
+      row_data: $row_data
+    )
+  }
+`;
+
+const TRUNCATE_TABLE = gql`
+  mutation truncateTable($keyspace_name: String!, $table_name: String!) {
+    truncateTable(keyspace_name: $keyspace_name, table_name: $table_name)
+  }
+`;
+
 export default withRouter(props => {
+  let projections = props.router.query.projectionFromLocalForage
+    ? props.router.query.projectionFromLocalForage
+    : [];
+
   return (
     <ApolloConsumer>
       {client => (
-        <Query
-          query={QUERY}
-          variables={{
-            keyspace_name: props.router.query.keyspace_name,
-            table_name: props.router.query.table_name,
-            column_projections: props.router.query.projectionFromLocalForage
-              ? props.router.query.projectionFromLocalForage
-              : []
-          }}
-        >
-          {({ error, loading, data, refetch }) => (
-            <div>
-              <TableRows
-                {...props}
-                client={client}
-                loading={loading}
-                error={error}
-                refetch={refetch}
-                allRows={
-                  data && data.allRowsByTableAndKeyspace
-                    ? data.allRowsByTableAndKeyspace.map(row => JSON.parse(row))
-                    : []
-                }
-                allColumns={
-                  data && data.allColumnsByTableAndKeyspace
-                    ? data.allColumnsByTableAndKeyspace.map(col =>
-                        JSON.parse(col)
-                      )
-                    : []
-                }
-              />
-            </div>
+        <Mutation mutation={TRUNCATE_TABLE}>
+          {truncateTable => (
+            <Mutation mutation={DELETE_ROW}>
+              {deleteRow => (
+                <Mutation mutation={UPDATE_ROW}>
+                  {updateRow => (
+                    <Mutation mutation={CREATE_ROW}>
+                      {createRow => (
+                        <Query
+                          query={QUERY}
+                          variables={{
+                            keyspace_name: props.router.query.keyspace_name,
+                            table_name: props.router.query.table_name,
+                            column_projections: projections
+                          }}
+                        >
+                          {({ error, loading, data, refetch }) => (
+                            <div>
+                              <TableRows
+                                {...props}
+                                client={client}
+                                loading={loading}
+                                error={error}
+                                refetch={refetch}
+                                allRows={
+                                  data && data.allRowsByTableAndKeyspace
+                                    ? data.allRowsByTableAndKeyspace.map(row =>
+                                        JSON.parse(row)
+                                      )
+                                    : []
+                                }
+                                allColumns={
+                                  data && data.allColumnsByTableAndKeyspace
+                                    ? data.allColumnsByTableAndKeyspace.map(
+                                        col => JSON.parse(col)
+                                      )
+                                    : []
+                                }
+                                createRow={createRow}
+                                deleteRow={deleteRow}
+                                updateRow={updateRow}
+                                truncateTable={truncateTable}
+                              />
+                            </div>
+                          )}
+                        </Query>
+                      )}
+                    </Mutation>
+                  )}
+                </Mutation>
+              )}
+            </Mutation>
           )}
-        </Query>
+        </Mutation>
       )}
     </ApolloConsumer>
   );
