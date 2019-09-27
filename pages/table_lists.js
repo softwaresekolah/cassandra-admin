@@ -222,7 +222,8 @@ class TableLists extends Component {
     },
     newTableVisible: false,
     alterTableVisible: false,
-    alterColumn: []
+    alterColumn: [],
+    exportLink: ""
   };
 
   openNewTable = () => {
@@ -531,6 +532,28 @@ class TableLists extends Component {
     }
   };
 
+  exportTable = selectedTable => async e => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    try {
+      const res = await this.props.exportTable({
+        variables: {
+          keyspace_name: this.props.router.query.keyspace_name,
+          table_name: selectedTable.table_name
+        }
+      });
+
+      window.location.href = res.data.exportTable;
+    } catch (err) {
+      handleError(err);
+    }
+  };
+
+
+
   render() {
     return (
       <AdminArea>
@@ -705,10 +728,26 @@ class TableLists extends Component {
                       >
                         <i className="fa fa-search" /> VIEW
                       </button>
+
                       {this.props.router.query.keyspace_name.includes(
                         "system"
                       ) ? null : (
                         <span>
+                          <button
+                            type="button"
+                            className="btn btn-link btn-sm"
+                            onClick={this.exportTable(table)}
+                          >
+                            <i className="fa fa-file-export" /> EXPORT
+                          </button>
+                          &nbsp;&nbsp;
+                          <button
+                            type="button"
+                            className="btn btn-link btn-sm"
+                            onClick={this.import(table)}
+                          >
+                            <i className="fa fa-file-import" /> EXPORT
+                          </button>
                           &nbsp;&nbsp;
                           <button
                             type="button"
@@ -811,46 +850,56 @@ const DROP_TABLE = gql`
     dropTable(keyspace_name: $keyspace_name, table_name: $table_name)
   }
 `;
+const EXPORT_TABLE = gql`
+  mutation exportTable($keyspace_name: String!, $table_name: String!) {
+    exportTable(keyspace_name: $keyspace_name, table_name: $table_name)
+  }
+`;
 
 export default withRouter(props => (
   <ApolloConsumer>
     {client => (
-      <Mutation mutation={ALTER_DROP_COLUMN}>
-        {alterDropColumn => (
-          <Mutation mutation={ALTER_ADD_COLUMN}>
-            {alterAddColumn => (
-              <Mutation mutation={DROP_TABLE}>
-                {dropTable => (
-                  <Mutation mutation={CREATE_TABLE}>
-                    {createTable => (
-                      <Query
-                        query={QUERY}
-                        variables={{
-                          keyspace_name: props.router.query.keyspace_name
-                        }}
-                      >
-                        {({ error, loading, data, refetch }) => (
-                          <TableLists
-                            {...props}
-                            client={client}
-                            loading={loading}
-                            allTables={
-                              data && data.allTablesByKeyspace
-                                ? orderBy(
-                                    data.allTablesByKeyspace,
-                                    ["table_name"],
-                                    ["asc"]
-                                  )
-                                : []
-                            }
-                            createTable={createTable}
-                            dropTable={dropTable}
-                            alterAddColumn={alterAddColumn}
-                            alterDropColumn={alterDropColumn}
-                            refetch={refetch}
-                          />
+      <Mutation mutation={EXPORT_TABLE}>
+        {exportTable => (
+          <Mutation mutation={ALTER_DROP_COLUMN}>
+            {alterDropColumn => (
+              <Mutation mutation={ALTER_ADD_COLUMN}>
+                {alterAddColumn => (
+                  <Mutation mutation={DROP_TABLE}>
+                    {dropTable => (
+                      <Mutation mutation={CREATE_TABLE}>
+                        {createTable => (
+                          <Query
+                            query={QUERY}
+                            variables={{
+                              keyspace_name: props.router.query.keyspace_name
+                            }}
+                          >
+                            {({ error, loading, data, refetch }) => (
+                              <TableLists
+                                {...props}
+                                client={client}
+                                loading={loading}
+                                allTables={
+                                  data && data.allTablesByKeyspace
+                                    ? orderBy(
+                                        data.allTablesByKeyspace,
+                                        ["table_name"],
+                                        ["asc"]
+                                      )
+                                    : []
+                                }
+                                createTable={createTable}
+                                dropTable={dropTable}
+                                alterAddColumn={alterAddColumn}
+                                alterDropColumn={alterDropColumn}
+                                exportTable={exportTable}
+                                refetch={refetch}
+                              />
+                            )}
+                          </Query>
                         )}
-                      </Query>
+                      </Mutation>
                     )}
                   </Mutation>
                 )}
