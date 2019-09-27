@@ -52,5 +52,7 @@ exports.rootTypes = `
     dropTable(keyspace_name: String!, table_name: String!): String!
     alterAddColumn(keyspace_name: String!, table_name: String!, column: [ColumnPayload]): String!
     alterDropColumn(keyspace_name: String!, table_name: String!, column_name: String!): String!
+
+    exportTable(keyspace_name: String!, table_name: String!): String!
   } 
 `;

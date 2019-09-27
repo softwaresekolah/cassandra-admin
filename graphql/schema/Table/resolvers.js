@@ -1,3 +1,5 @@
+const fs = require("fs");
+const shelljs = require("shelljs");
 const resolvers = {
   Query: {
     allTablesByKeyspace: async (self, params, context) => {
@@ -80,6 +82,54 @@ const resolvers = {
         throw new Error("Error, Keyspace not found: ", err);
       }
       return "ok";
+    },
+
+    exportTable: async (self, params, context) => {
+      try {
+        await context.cassandra.execute(`USE ${params.keyspace_name}`);
+
+        const rowResults = await context.cassandra.execute(
+          `SELECT * FROM ${params.table_name}`
+        );
+
+        const columnResults = await context.cassandra.execute(
+          `SELECT column_name, type, kind FROM system_schema.columns WHERE keyspace_name = '${params.keyspace_name}' AND table_name='${params.table_name}'`
+        );
+
+        const rowData = rowResults.rows;
+        const colData = columnResults.rows;
+
+        const exportPath = process.cwd() + "/static/exportDB";
+
+        if (!fs.existsSync(exportPath)) {
+          fs.mkdirSync(exportPath, {
+            recursive: true
+          });
+        }
+
+        fs.writeFileSync(
+          `${params.table_name}.row.json`,
+          JSON.stringify(rowData)
+        );
+        fs.writeFileSync(
+          `${params.table_name}.column.json`,
+          JSON.stringify(colData)
+        );
+
+        shelljs.exec(`mv ${params.table_name}.row.json ${exportPath}`);
+        shelljs.exec(`mv ${params.table_name}.column.json ${exportPath}`);
+
+        shelljs.exec(
+          `tar --use-compress-program zstd -cf table-${params.table_name}.tar.zst ${exportPath}`
+        );
+
+        shelljs.exec(`mv *.zst ${exportPath}`);
+        shelljs.exec(`rm ${exportPath}/*.json`);
+
+        return `/static/exportDB/table-${params.table_name}.tar.zst`;
+      } catch (err) {
+        return err;
+      }
     }
   },
 
