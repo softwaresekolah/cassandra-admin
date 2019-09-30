@@ -64,7 +64,6 @@ const RowDataModal = ({ columns, handleInput, data }) =>
           {col.kind === "partition_key" ? `("PRIMARY KEY")` : null}
         </div>
       </div>
-
       <input
         className="form-control"
         onChange={handleInput(col.column_name)}
@@ -252,7 +251,7 @@ class TableRows extends Component {
       await this.props.refetch();
       this.closeNewRow();
     } catch (err) {
-      handleError(err);
+      handleError(err)
     }
   };
 
@@ -292,11 +291,10 @@ class TableRows extends Component {
         rowData.push({
           column_name: c.column_name,
           kind: c.kind,
-          value: this.state.editRow[c.column_name]
+          value: this.state.editRow[c.column_name],
+          type: c.type
         });
       }
-
-      
 
       await this.props.updateRow({
         variables: {

@@ -20,6 +20,5 @@ exports.rootTypes = `
     deleteRow(keyspace_name: String!, table_name: String!): String!
 
     truncateTable(keyspace_name: String!, table_name: String!): String!
-
   }
 `;

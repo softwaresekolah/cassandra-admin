@@ -12,6 +12,9 @@ import orderBy from "lodash/orderBy";
 import { addNotification } from "../components/App";
 import uuidV4 from "uuid/v4";
 
+import Dropzone from "react-dropzone";
+import localforage from "localforage";
+
 const DATA_TYPES = [
   "text",
   "int",
@@ -223,7 +226,9 @@ class TableLists extends Component {
     newTableVisible: false,
     alterTableVisible: false,
     alterColumn: [],
-    exportLink: ""
+    exportLink: "",
+    importTableVisible: false,
+    destinatonTable: ""
   };
 
   openNewTable = () => {
@@ -312,6 +317,8 @@ class TableLists extends Component {
     }
 
     let sortedColumns = selectedTable.Columns;
+
+    // for(const col of selec)
     sortedColumns.forEach((item, i) => {
       if (item.kind === "partition_key") {
         selectedTable.Columns.splice(i, 1);
@@ -330,7 +337,8 @@ class TableLists extends Component {
         }),
         editStatus: true
       },
-      alterTableVisible: true
+      alterTableVisible: true,
+      alterColumn: []
     });
   };
 
@@ -513,6 +521,9 @@ class TableLists extends Component {
 
     try {
       if (confirm(`Are you sure drop ${selectedTable.table_name} table ?`)) {
+        await localforage.removeItem(
+          `${this.props.router.query.keyspace_name}.${selectedTable.table_name}`
+        );
         await this.props.dropTable({
           variables: {
             keyspace_name: this.props.router.query.keyspace_name,
@@ -552,7 +563,64 @@ class TableLists extends Component {
     }
   };
 
+  openImportModal = table => e => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    this.setState({
+      importTableVisible: true,
+      destinatonTable: table
+    });
+  };
 
+  closeImportTable = () => {
+    this.setState({
+      importTableVisible: false
+    });
+  };
+
+  onDrop = files => {
+    let file = files[0].name.split(".").pop();
+
+    if (file !== "zst") {
+      throw {
+        message: "File is not zstd/zst (zee standard) extension"
+      };
+    }
+    var reader = new FileReader();
+    reader.readAsDataURL(files[0]);
+    reader.onload = async () => {
+      // showLoadingSpinner();
+      try {
+        // console.log(reader)
+        let res = await this.props.importTable({
+          variables: {
+            keyspace_name: this.props.router.query.keyspace_name,
+            table_name: this.state.destinatonTable.table_name,
+            importedFile: reader.result
+          }
+        });
+
+        await this.props.refetch();
+
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+        addNotification({
+          message: "Import database success",
+          level: "success"
+        });
+      } catch (err) {
+        handleError(err);
+      }
+      this.closeImportTable();
+      // hideLoadingSpinner();
+    };
+    reader.onerror = error => {
+      handleError(error);
+    };
+  };
 
   render() {
     return (
@@ -600,6 +668,34 @@ class TableLists extends Component {
             alterColumn={this.state.alterColumn}
             handleAlterDropColumn={this.handleAlterDropColumn}
           />
+        </FormModal>
+
+        <FormModal
+          title={
+            <span>
+              <i className="fa fa-database" /> Import Database
+            </span>
+          }
+          visible={this.state.importTableVisible}
+          onClose={this.closeImportTable}
+        >
+          <Dropzone
+            onDrop={this.onDrop}
+            // accept="application/zstd"
+            style={{
+              position: "relative",
+              border: "2px solid red",
+              padding: "30px 20px"
+            }}
+            multiple={false}
+          >
+            <div className="text-center">
+              <h2>
+                <i className="fa fa-file" />
+              </h2>
+              Drop The File Here / Click For Upload
+            </div>
+          </Dropzone>
         </FormModal>
 
         <div>
@@ -740,13 +836,12 @@ class TableLists extends Component {
                           >
                             <i className="fa fa-file-export" /> EXPORT
                           </button>
-                          &nbsp;&nbsp;
                           <button
                             type="button"
                             className="btn btn-link btn-sm"
-                            onClick={this.import(table)}
+                            onClick={this.openImportModal(table)}
                           >
-                            <i className="fa fa-file-import" /> EXPORT
+                            <i className="fa fa-file-import" /> IMPORT
                           </button>
                           &nbsp;&nbsp;
                           <button
@@ -855,49 +950,68 @@ const EXPORT_TABLE = gql`
     exportTable(keyspace_name: $keyspace_name, table_name: $table_name)
   }
 `;
+const IMPORT_TABLE = gql`
+  mutation importTable(
+    $keyspace_name: String!
+    $table_name: String!
+    $importedFile: String!
+  ) {
+    importTable(
+      keyspace_name: $keyspace_name
+      table_name: $table_name
+      importedFile: $importedFile
+    )
+  }
+`;
 
 export default withRouter(props => (
   <ApolloConsumer>
     {client => (
-      <Mutation mutation={EXPORT_TABLE}>
-        {exportTable => (
-          <Mutation mutation={ALTER_DROP_COLUMN}>
-            {alterDropColumn => (
-              <Mutation mutation={ALTER_ADD_COLUMN}>
-                {alterAddColumn => (
-                  <Mutation mutation={DROP_TABLE}>
-                    {dropTable => (
-                      <Mutation mutation={CREATE_TABLE}>
-                        {createTable => (
-                          <Query
-                            query={QUERY}
-                            variables={{
-                              keyspace_name: props.router.query.keyspace_name
-                            }}
-                          >
-                            {({ error, loading, data, refetch }) => (
-                              <TableLists
-                                {...props}
-                                client={client}
-                                loading={loading}
-                                allTables={
-                                  data && data.allTablesByKeyspace
-                                    ? orderBy(
-                                        data.allTablesByKeyspace,
-                                        ["table_name"],
-                                        ["asc"]
-                                      )
-                                    : []
-                                }
-                                createTable={createTable}
-                                dropTable={dropTable}
-                                alterAddColumn={alterAddColumn}
-                                alterDropColumn={alterDropColumn}
-                                exportTable={exportTable}
-                                refetch={refetch}
-                              />
+      <Mutation mutation={IMPORT_TABLE}>
+        {importTable => (
+          <Mutation mutation={EXPORT_TABLE}>
+            {exportTable => (
+              <Mutation mutation={ALTER_DROP_COLUMN}>
+                {alterDropColumn => (
+                  <Mutation mutation={ALTER_ADD_COLUMN}>
+                    {alterAddColumn => (
+                      <Mutation mutation={DROP_TABLE}>
+                        {dropTable => (
+                          <Mutation mutation={CREATE_TABLE}>
+                            {createTable => (
+                              <Query
+                                query={QUERY}
+                                variables={{
+                                  keyspace_name:
+                                    props.router.query.keyspace_name
+                                }}
+                              >
+                                {({ error, loading, data, refetch }) => (
+                                  <TableLists
+                                    {...props}
+                                    client={client}
+                                    loading={loading}
+                                    refetch={refetch}
+                                    allTables={
+                                      data && data.allTablesByKeyspace
+                                        ? orderBy(
+                                            data.allTablesByKeyspace,
+                                            ["table_name"],
+                                            ["asc"]
+                                          )
+                                        : []
+                                    }
+                                    createTable={createTable}
+                                    dropTable={dropTable}
+                                    alterAddColumn={alterAddColumn}
+                                    alterDropColumn={alterDropColumn}
+                                    exportTable={exportTable}
+                                    importTable={importTable}
+                                  />
+                                )}
+                              </Query>
                             )}
-                          </Query>
+                          </Mutation>
                         )}
                       </Mutation>
                     )}

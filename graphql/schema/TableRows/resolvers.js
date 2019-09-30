@@ -6,6 +6,8 @@ const resolvers = {
           ? "*"
           : String(params.column_projections);
 
+      // console.log(selectedProjections);
+
       const results = await context.cassandra.execute(
         `SELECT ${selectedProjections} FROM ${params.keyspace_name}.${params.table_name} LIMIT 100;`,
         [],
@@ -72,19 +74,27 @@ const resolvers = {
           if (r.kind === "partition_key") {
             whereClause = r;
           } else {
-            let val = r.value;
+            let val;
 
-            assignments += `${r.column_name}` + "=" + `'${val}',`;
+            if (r.type === "int") {
+              val = isNaN(parseInt(r.value)) ? null : parseInt(r.value);
+            } else if (r.type === "float") {
+              val = isNaN(parseFloat(r.value)) ? null : parseFloat(r.value);
+            } else if (r.type === "double") {
+              val = isNaN(parseInt(r.value)) ? null : parseInt(r.value);
+            } else {
+              val = `'${r.value}'`;
+            }
+
+            assignments += `${r.column_name}` + "=" + `${val},`;
           }
         }
 
-        console.log(assignments);
+        assignments = assignments.substring(0, assignments.length - 1);
 
-        // assignments = assignments.substring(0, assignments.length - 1);
-
-        // await context.cassandra.execute(`
-        //   UPDATE ${params.keyspace_name}.${params.table_name} SET ${assignments} WHERE ${whereClause.column_name}='${whereClause.value}'
-        // `);
+        await context.cassandra.execute(`
+          UPDATE ${params.keyspace_name}.${params.table_name} SET ${assignments} WHERE ${whereClause.column_name}='${whereClause.value}'
+        `);
 
         return "ok";
       } catch (err) {

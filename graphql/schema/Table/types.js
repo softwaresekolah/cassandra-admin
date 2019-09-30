@@ -54,5 +54,6 @@ exports.rootTypes = `
     alterDropColumn(keyspace_name: String!, table_name: String!, column_name: String!): String!
 
     exportTable(keyspace_name: String!, table_name: String!): String!
+    importTable(keyspace_name: String!, table_name: String!, importedFile: String!): String!
   } 
 `;

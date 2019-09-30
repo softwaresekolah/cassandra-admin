@@ -7,4 +7,5 @@ release/
 .env.production
 static/cache/
 static/img/uploads
+static/exportDB
 tmp_impor.xlsx

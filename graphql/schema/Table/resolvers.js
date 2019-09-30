@@ -1,5 +1,6 @@
 const fs = require("fs");
 const shelljs = require("shelljs");
+const mime = require("mime");
 const resolvers = {
   Query: {
     allTablesByKeyspace: async (self, params, context) => {
@@ -17,10 +18,13 @@ const resolvers = {
       for (const c of params.column) {
         stringQuery += `${c.column_name} ${c.type} ${
           c.kind === "partition_key" ? "PRIMARY KEY" : ""
-        }, `;
+        },`;
       }
 
-      stringQuery = stringQuery.split(" ,").join("");
+      stringQuery = stringQuery.split(" ,").join(",");
+
+      stringQuery = stringQuery.substring(0, stringQuery.length - 1);
+      // console.log(stringQuery);
       try {
         await context.cassandra.execute(
           `CREATE TABLE IF NOT EXISTS ${params.keyspace_name}.${params.table_name}(${stringQuery})`
@@ -99,13 +103,11 @@ const resolvers = {
         const rowData = rowResults.rows;
         const colData = columnResults.rows;
 
-        const exportPath = process.cwd() + "/static/exportDB";
-
-        if (!fs.existsSync(exportPath)) {
-          fs.mkdirSync(exportPath, {
-            recursive: true
-          });
+        if (fs.existsSync("static/exportDB")) {
+          shelljs.exec("rm -rf static/exportDB");
         }
+
+        shelljs.exec("mkdir static/exportDB");
 
         fs.writeFileSync(
           `${params.table_name}.row.json`,
@@ -116,20 +118,108 @@ const resolvers = {
           JSON.stringify(colData)
         );
 
-        shelljs.exec(`mv ${params.table_name}.row.json ${exportPath}`);
-        shelljs.exec(`mv ${params.table_name}.column.json ${exportPath}`);
+        shelljs.exec(`mv ${params.table_name}.row.json static/exportDB`);
+        shelljs.exec(`mv ${params.table_name}.column.json static/exportDB`);
 
         shelljs.exec(
-          `tar --use-compress-program zstd -cf table-${params.table_name}.tar.zst ${exportPath}`
+          `tar --use-compress-program zstd -cf static/exportDB/table-${params.table_name}.tar.zst static/exportDB`
         );
 
-        shelljs.exec(`mv *.zst ${exportPath}`);
-        shelljs.exec(`rm ${exportPath}/*.json`);
+        // shelljs.exec(`mv *.zst static/exportDB`);
+        // shelljs.exec(`rm static/exportDB/*.json`);
 
         return `/static/exportDB/table-${params.table_name}.tar.zst`;
       } catch (err) {
         return err;
       }
+    },
+
+    importTable: async (self, params, context) => {
+      try {
+        const filename = `tmp-import-table.tar.zst`;
+        const buf = Buffer.from(
+          params.importedFile.split("base64,")[1],
+          "base64"
+        );
+        const type = params.importedFile.split(";")[0].split("/")[1];
+
+        // if (fs.existsSync("static/importDB")) {
+        //   shelljs.exec("rm -rf static/importDB");
+        // }
+
+        shelljs.exec("mkdir static/importDB");
+
+        fs.writeFileSync("static/importDB" + "/" + filename, buf);
+
+        const dir = `static/importDB/tmp-import-table.tar`;
+
+        shelljs.exec(`unzstd static/importDB/${filename}`);
+        shelljs.exec(
+          `tar -xzf static/importDB/tmp-import-table.tar --strip-components 2 -C static/importDB`
+        );
+
+        shelljs.exec(`rm static/importDB/*.tar`);
+        shelljs.exec(`rm static/importDB/*.zst`);
+
+        const fileNames = fs
+          .readdirSync("static/importDB")
+          .filter(name => name.endsWith(".json"));
+        // console.log("Got", files.length, "json");
+
+        // =========== CREATE COLUMN =========== ======= //
+        const columns = fs.readFileSync("static/importDB" + "/" + fileNames[0]);
+        let columnsData = JSON.parse(columns);
+
+        let destination = await context.cassandra.execute(
+          `SELECT column_name, type, kind FROM system_schema.columns WHERE keyspace_name = '${params.keyspace_name}' AND table_name='${params.table_name}'`
+        );
+
+        let counter = 0;
+
+        for (const c of columnsData) {
+          const indexName = destination.rows
+            .map(des => des.column_name)
+            .indexOf(c.column_name);
+
+          if (indexName === -1) {
+            await context.cassandra.execute(
+              `ALTER TABLE ${params.keyspace_name}.${params.table_name} ADD ${c.column_name} ${c.type}`
+            );
+          }
+          if (indexName > -1) {
+            if (c.type !== destination.rows[indexName].type) {
+              throw new Error(
+                `Column (${c.column_name}) type supposed to be ${c.type} not ${destination.rows[indexName].type}`
+              );
+            }
+
+            if (c.kind !== destination.rows[indexName].kind) {
+              throw new Error(
+                `Column (${c.column_name}) kind supposed to be ${c.kind} not ${destination.rows[indexName].kind}`
+              );
+            }
+          }
+        }
+
+        // =========================================== //
+
+        //================== INSERT DATA  ===============//
+
+        const rows = fs.readFileSync("static/importDB" + "/" + fileNames[1]);
+        const rowsData = JSON.parse(rows);
+
+        for (const data of rowsData) {
+          let d = JSON.stringify(data);
+          await context.cassandra.execute(
+            `INSERT INTO ${params.keyspace_name}.${params.table_name} JSON '${d}'`
+          );
+        }
+
+        shelljs.exec("rm -rf static/importDB");
+      } catch (err) {
+        return err;
+      }
+      return "ok";
     }
   },
 
@@ -146,3 +236,19 @@ const resolvers = {
 };
 
 exports.resolvers = resolvers;
+
+const base64MimeType = encoded => {
+  var result = null;
+
+  if (typeof encoded !== "string") {
+    return result;
+  }
+
+  var mime = encoded.match(/data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+).*,.*/);
+
+  if (mime && mime.length) {
+    result = mime[1];
+  }
+
+  return result;
+};

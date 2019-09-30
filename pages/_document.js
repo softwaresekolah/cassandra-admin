@@ -45,6 +45,8 @@ export default class SiteDocument extends Document {
           {/* <script
             dangerouslySetInnerHTML={{ __html: "__ENV__ = " + htmlescape(env) }}
           /> */}
+          <link href="/static/css/jsoneditor.min.css" rel="stylesheet" />
+          
         </Head>
         <body>
           <Main />
