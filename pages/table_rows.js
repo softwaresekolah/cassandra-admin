@@ -15,6 +15,10 @@ import localforage from "localforage";
 
 let projectionFromLocalForage = [];
 
+import JSONInput from "react-json-editor-ajrm";
+import locale from "react-json-editor-ajrm/locale/en";
+import uuidV4 from "uuid/v4";
+
 const ProjectionColumnsModal = ({
   columns,
   handleToggleColumn,
@@ -80,9 +84,15 @@ class TableRows extends Component {
     newRow: {},
     editRow: {},
 
+    jsonNewRow: {},
+    jsonEditRow: {},
+
     showProjectionVisible: false,
     newRowDataVisible: false,
-    editRowDataVisible: false
+    editRowDataVisible: false,
+
+    jsonEditRowVisible: false,
+    jsonNewRowVisible: false
   };
 
   static getDerivedStateFromProps = (props, state) => {
@@ -200,7 +210,6 @@ class TableRows extends Component {
   };
 
   openNewRow = () => {
-    let columns = [];
     let initData = {};
     for (const col of this.props.allColumns) {
       initData[col.column_name] = "";
@@ -251,7 +260,7 @@ class TableRows extends Component {
       await this.props.refetch();
       this.closeNewRow();
     } catch (err) {
-      handleError(err)
+      handleError(err);
     }
   };
 
@@ -311,6 +320,158 @@ class TableRows extends Component {
       await this.props.refetch();
 
       this.closeEditRow();
+    } catch (err) {
+      handleError(err);
+    }
+  };
+
+  openNewJSONRow = () => {
+    let initData = {};
+    for (const col of this.props.allColumns) {
+      if (col.type === "int" || col.type === "float") {
+        initData[col.column_name] = 0;
+      } else {
+        if (col.kind === "partition_key") {
+          initData[col.column_name] = uuidV4();
+        } else {
+          initData[col.column_name] = "";
+        }
+      }
+    }
+    this.setState({
+      jsonNewRowVisible: true,
+      jsonNewRow: {
+        ...initData
+      }
+    });
+  };
+
+  handleNewJSONRow = obj => {
+    this.setState({
+      jsonNewRow: {
+        ...obj.jsObject
+      }
+    });
+  };
+
+  closeNewJSONRow = () => {
+    this.setState({
+      jsonNewRowVisible: false
+    });
+  };
+
+  submitNewJSONRow = async e => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    const { jsonNewRow } = this.state;
+
+    try {
+      await this.props.createRow({
+        variables: {
+          keyspace_name: this.props.router.query.keyspace_name,
+          table_name: this.props.router.query.table_name,
+          row_data: JSON.stringify(this.state.jsonNewRow)
+        }
+      });
+
+      addNotification({
+        message: "New row added success",
+        level: "success"
+      });
+      await this.props.refetch();
+      this.closeNewJSONRow();
+    } catch (err) {
+      handleError(err);
+    }
+  };
+
+  openEditJSONRow = selectedRow => {
+    // console.log(selectedRow)
+    this.setState({
+      jsonEditRow: {
+        ...selectedRow.row
+      },
+      jsonEditRowVisible: true
+    });
+  };
+
+  handleEditJSONRow = obj => {
+    this.setState({
+      jsonEditRow: {
+        ...obj.jsObject
+      }
+    });
+  };
+
+  closeEditJSONRow = e => {
+    this.setState({
+      jsonEditRowVisible: false
+    });
+  };
+
+  submitEditJSONRow = async e => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    try {
+      const { jsonEditRow } = this.state;
+
+      let rowData = [];
+      for (const key of Object.keys(jsonEditRow)) {
+        const col = this.props.allColumns.filter(c => c.column_name === key);
+
+        if (col.length !== 0) {
+          const getColumn = this.props.allColumns.find(
+            c => c.column_name === key
+          );
+          rowData.push({
+            column_name: key,
+            kind: getColumn ? getColumn.kind : null,
+            value: jsonEditRow[key],
+            type: getColumn ? getColumn.type : null
+          });
+        } else {
+          let type;
+          const kind = "regular";
+
+          if (typeof jsonEditRow[key] === "number") {
+            if (Number.isSafeInteger(jsonEditRow[key])) {
+              type = "int";
+            } else {
+              type = "float";
+            }
+          } else {
+            type = "text";
+          }
+
+          rowData.push({
+            column_name: key,
+            kind: kind,
+            value: jsonEditRow[key],
+            type: type
+          });
+        }
+      }
+
+      await this.props.updateRow({
+        variables: {
+          keyspace_name: this.props.router.query.keyspace_name,
+          table_name: this.props.router.query.table_name,
+          row_data: JSON.stringify(rowData)
+        }
+      });
+
+      addNotification({
+        message: "Update row success",
+        level: "success"
+      });
+      await this.props.refetch();
+      this.closeEditJSONRow();
     } catch (err) {
       handleError(err);
     }
@@ -386,7 +547,7 @@ class TableRows extends Component {
           />
         </FormModal>
 
-        <FormModal
+        {/* <FormModal
           title={
             <span>
               <i className="fa fa-plus-circle" /> Create Row
@@ -402,9 +563,9 @@ class TableRows extends Component {
             handleInput={this.handleInputNewRow}
             data={this.state.newRow}
           />
-        </FormModal>
+        </FormModal> */}
 
-        <FormModal
+        {/* <FormModal
           title={
             <span>
               <i className="fa fa-edit" /> Update Row
@@ -419,6 +580,50 @@ class TableRows extends Component {
             columns={sortedColumns}
             handleInput={this.handleInputEditRow}
             data={this.state.editRow}
+          />
+        </FormModal> */}
+        <FormModal
+          title={
+            <span>
+              <i className="fa fa-plus" /> New Row
+            </span>
+          }
+          visible={this.state.jsonNewRowVisible}
+          onClose={this.closeNewJSONRow}
+          onSubmit={this.submitNewJSONRow}
+          // size="lg"
+        >
+          <JSONInput
+            placeholder={this.state.jsonNewRow} // data to display
+            theme="dark_vscode_tribute"
+            locale={locale}
+            colors={{
+              string: "#DAA520" // overrides theme colors with whatever color value you want
+            }}
+            height="550px"
+            onChange={this.handleNewJSONRow}
+          />
+        </FormModal>
+        <FormModal
+          title={
+            <span>
+              <i className="fa fa-edit" /> Update Row
+            </span>
+          }
+          visible={this.state.jsonEditRowVisible}
+          onClose={this.closeEditJSONRow}
+          onSubmit={this.submitEditJSONRow}
+          // size="lg"
+        >
+          <JSONInput
+            placeholder={this.state.jsonEditRow} // data to display
+            theme="dark_vscode_tribute"
+            locale={locale}
+            colors={{
+              string: "#DAA520" // overrides theme colors with whatever color value you want
+            }}
+            height="550px"
+            onChange={this.handleEditJSONRow}
           />
         </FormModal>
         <div className="container">
@@ -490,8 +695,11 @@ class TableRows extends Component {
                       columns={this.state.columns}
                       loading={this.props.loading}
                       data={this.props.allRows}
-                      onAddData={this.openNewRow}
-                      onEditData={this.openEditRow}
+                      // onAddData={this.openNewRow}
+                      // onEditData={this.openEditRow}
+
+                      onAddData={this.openNewJSONRow}
+                      onEditData={this.openEditJSONRow}
                       onDeleteData={this.submitDelete}
                     />
                   )}
@@ -568,6 +776,20 @@ const DELETE_ROW = gql`
 const TRUNCATE_TABLE = gql`
   mutation truncateTable($keyspace_name: String!, $table_name: String!) {
     truncateTable(keyspace_name: $keyspace_name, table_name: $table_name)
+  }
+`;
+
+const SELECT_ROW = gql`
+  mutation selectRow(
+    $keyspace_name: String!
+    $table_name: String!
+    $row_data: String!
+  ) {
+    selectRow(
+      keyspace_name: $keyspace_name
+      table_name: $table_name
+      row_data: $row_data
+    )
   }
 `;
 

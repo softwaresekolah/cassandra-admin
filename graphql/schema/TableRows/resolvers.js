@@ -50,6 +50,52 @@ const resolvers = {
   Mutation: {
     createRow: async (self, params, context) => {
       try {
+        // const results = await context.cassandra.execute(
+        //   `SELECT column_name, type, kind FROM system_schema.columns WHERE keyspace_name = '${params.keyspace_name}' AND table_name='${params.table_name}'`
+        // );
+
+        // // console.log(Object.keys(JSON.parse(params.row_data)));
+
+        // const { row_data } = params;
+
+        // for (const key of Object.keys(JSON.parse(row_data))) {
+        //   const indexName = results.rows
+        //     .map(res => res.column_name)
+        //     .indexOf(key);
+
+        //   if (indexName === -1) {
+        //     const data = JSON.parse(row_data);
+
+        //     let columnProperty = {};
+        //     if (typeof data[key] === "string") {
+        //       columnProperty = {
+        //         column_name: data[key],
+        //         type: "text"
+        //       };
+        //     } else if (typeof data[key] === "number") {
+        //       if (Number.isSafeInteger(jsonEditRow[key])) {
+        //         columnProperty = {
+        //           column_name: data[key],
+        //           type: "int"
+        //         };
+        //       } else {
+        //         columnProperty = {
+        //           column_name: data[key],
+        //           type: "float"
+        //         };
+        //       }
+        //     }
+
+        //     // await context.cassandra.execute(
+        //     //   `ALTER TABLE ${params.keyspace_name}.${params.table_name} ADD ${columnProperty.column_name} ${columnProperty.type}`,
+        //     //   [],
+        //     //   {
+        //     //     keyspace: params.keyspace_name
+        //     //   }
+        //     // );
+        //   }
+        // }
+
         await context.cassandra.execute(
           `INSERT INTO ${params.keyspace_name}.${params.table_name} JSON '${params.row_data}'`
         );
@@ -64,10 +110,27 @@ const resolvers = {
       try {
         // console.log(params.row_data);
 
+        const results = await context.cassandra.execute(
+          `SELECT column_name, type, kind FROM system_schema.columns WHERE keyspace_name = '${params.keyspace_name}' AND table_name='${params.table_name}'`
+        );
+
         let row_data = JSON.parse(params.row_data);
 
-        let whereClause = {};
+        for (const row of row_data) {
+          const indexName = results.rows
+            .map(res => res.column_name)
+            .indexOf(row.column_name);
 
+          if (indexName === -1) {
+            // await context.cassandra.execute(
+            //   `ALTER TABLE ${params.keyspace_name}.${params.table_name} ADD ${row.column_name} ${row.type}`
+            // );
+            console.log(indexName);
+            throw new Error(`Unknown column ${row.column_name}`);
+          }
+        }
+
+        let whereClause = {};
         let assignments = "";
         for (const r of row_data) {
           //check if r contain partition key and set as where clause
@@ -82,6 +145,8 @@ const resolvers = {
               val = isNaN(parseFloat(r.value)) ? null : parseFloat(r.value);
             } else if (r.type === "double") {
               val = isNaN(parseInt(r.value)) ? null : parseInt(r.value);
+            } else if (r.type === "boolean") {
+              val = r.value;
             } else {
               val = `'${r.value}'`;
             }
